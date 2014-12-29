@@ -40,7 +40,8 @@ _main:
         call    _clear_screen               ; Startovati komandni interpreter      
         call	_init_scheduler
         call 	set_interrupts
-        call    _command_line
+        call 	_command_line
+        jmp 	$							; obrisi ovaj hakzor
 
 stop:   mov     si, stop_msg                ; Kada se izadje iz CLI, sistem se zaustavlja.
         call    _print_string

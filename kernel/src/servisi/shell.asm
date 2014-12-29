@@ -36,20 +36,20 @@
 %define     NULL 0
 %define     DELIMIT '/'                     ; Oznaka za prompt delimiter
 
-app_start   equ  8000h
-app_seg     equ  app_start/10h
-input       equ  app_start - 256            ; Deljeni bafer za OS i aplikacije
-arg1        equ  app_start - 128            ; Bafer za prvi argument komandne linije
+        app_start   equ  8000h
+        app_seg     equ  app_start/10h
+        input       equ  app_start - 256            ; Deljeni bafer za OS i aplikacije
+        arg1        equ  app_start - 128            ; Bafer za prvi argument komandne linije
 
 _command_line:
-        call    _clear_screen
- 	mov     ax, autoexec_string         ; Ucitavamo autoexec.bat
-        mov     bx, 0                       ; 
-        mov     cx, app_start               ; Adresa gde pocinje program                
-        call    _load_file                  ; CF = 1 ukoliko nema autoexec
-        jc 	Ispisi_verziju              ; Preskoci sledeci deo ako autoexec.bat ne postoji           
-	mov     ax, app_start               ; Prosledjuemo interpreteru pocetak programa 
-        call    _run_batch                  ; Pokrecemo BATCH Intepreter
+    call    _clear_screen
+    mov     ax, autoexec_string         ; Ucitavamo autoexec.bat
+    mov     bx, 0                       ; 
+    mov     cx, app_start               ; Adresa gde pocinje program                
+    call    _load_file                  ; CF = 1 ukoliko nema autoexec
+    jc      Ispisi_verziju              ; Preskoci sledeci deo ako autoexec.bat ne postoji           
+    mov     ax, app_start               ; Prosledjuemo interpreteru pocetak programa 
+    call    _run_batch                  ; Pokrecemo BATCH Intepreter
 
 Ispisi_verziju:		       
         mov     si, pozdrav
@@ -74,13 +74,13 @@ Komanda:
         mov     si, input                   ; Konvertovati sve u velika slova
         call    _string_uppercase
 		
-		push	si
-		push	di
-		mov		si, input
-		mov		di, temp_input
-		call	_string_copy
-		pop 	di
-		pop		si
+	push	si
+	push	di
+	mov	si, input
+	mov	di, temp_input
+	call	_string_copy
+	pop 	di
+	pop	si
 
 ; -------------------------
 ; Da li je interna komanda
@@ -262,10 +262,17 @@ PunoIme:
         call    _string_compare
         jnc     ComDatoteka               
    
-        call    app_start                   ; Poziv ucitanog programa        
-		mov		ax, (prompt+9)              ; Path pocetak
-		call	_change_folder_path
-		mov word [tempBrojac], 0
+        call    _ubaci_proces
+        jnc     .markonastavi
+        mov     si, stop_msg
+        call    _print_string
+        call    _dump_registers
+.markonastavi
+
+        ;call    app_start                   ; Poziv ucitanog programa        
+	;	mov		ax, (prompt+9)              ; Path pocetak
+	;	call	_change_folder_path
+	;	mov word [tempBrojac], 0
         jmp     Komanda                     ; Po zavrsetku programa, ponovo se startuje shell
 
 ; --------------------------------------------------------
@@ -318,9 +325,9 @@ BatDatoteka:
         mov     ax, app_start               ; Ako jeste, pocetak programa 
         mov word bx, [Velicina]             ; i njegova velicina u memoriji 
         call    _run_batch                  ; prosledjuju se skript interpreteru
-		mov		ax, (prompt+9)              ; Path pocetak
-		call	_change_folder_path
-		mov word [tempBrojac], 0
+	mov		ax, (prompt+9)              ; Path pocetak
+	call	_change_folder_path
+	mov word [tempBrojac], 0
         jmp     Komanda                     ; Po izlasku iz interpretera, ponovo prompt.
 
 ; ----------------------------------------------------

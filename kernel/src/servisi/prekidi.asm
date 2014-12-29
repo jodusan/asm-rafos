@@ -98,11 +98,9 @@ set_interrupts:
 		sti
 		popa
 		ret
-porukica db 'shazalakazoo', 13, 10, 0
+
 novi_int08:									; Poziva stari int 08h pa zatim rutinu za stampanje
 		int 	7Ah							; Pozivamo originalni int 08h
-		mov		si, porukica
-		call 	_print_string
 		call	printer
 		iret
 		

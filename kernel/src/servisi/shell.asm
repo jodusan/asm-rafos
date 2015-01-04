@@ -263,7 +263,6 @@ PunoIme:
         jnc     ComDatoteka               
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         mov     ax, arg0
-
         call    _ubaci_proces
 
 ;         ;pusha
@@ -285,9 +284,9 @@ PunoIme:
         ;call    app_start                   ; Poziv ucitanog programa    
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    
- 	mov		ax, (prompt+9)              ; Path pocetak
- 	call	_change_folder_path
- 	mov word [tempBrojac], 0
+ 	;mov		ax, (prompt+9)              ; Path pocetak
+ 	;call	_change_folder_path
+ 	;mov word [tempBrojac], 0
         jmp     Komanda                     ; Po zavrsetku programa, ponovo se startuje shell
 
 ; --------------------------------------------------------

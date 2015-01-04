@@ -120,10 +120,11 @@ novi_int08:									; Poziva stari int 08h pa zatim rutinu za stampanje
 		push si
 		push di 								; guramo sve na stek 
 
+		mov si, sch_stacks
 		xor ah, ah
 		mov al, byte [sch_active_proc]
-		mov si, ax 							; pamtimo sp trenutnog procesa 
-		add si, sch_stacks 
+		add si, ax 							; pamtimo sp trenutnog procesa 
+		add si, ax 
 		mov word [si], sp
 
 		mov al, byte [sch_queue]			; sch_active_proc je sch_queue[0] 
@@ -148,25 +149,13 @@ novi_int08:									; Poziva stari int 08h pa zatim rutinu za stampanje
 		mov al, byte [sch_active_proc]		; na kraj queue-a stavljamo prvi 			
 		mov byte [si], al 		 			; u nizu ( trenutni proces )
 											
-		.update_stack:		
-		mov si, sch_stacks 					; na sp stavljamo stek novog(trenutnog) procesa
+		.update_stack:
+		mov si, sch_stacks				
 		xor ah, ah
 		mov al, byte [sch_active_proc] 
-		add si, ax		
-		mov sp, word [si]
-
-		
-		cmp byte [sch_active_proc], 0
-		je .izlaz
-
-mov sp, 93E9h
-
-		mov bx, sp
-		call _dump_registers
-
-		;jmp $
-
-.izlaz:
+		add si, ax
+		add si, ax	
+		mov sp, word [si]					; na sp stavljamo stek novog(trenutnog) procesa
 
 		pop di
 		pop si
@@ -179,8 +168,6 @@ mov sp, 93E9h
 		; ------------------------------------------------------------------------------------------
 		; SCHEDULER RUTINA KRAJ
 		; ------------------------------------------------------------------------------------------
-		;call _dbg_dump
-		;call _dump_registers
 		iret
 		
 novi_int10:									; int 10h ne menja flagove tako da ne moramo da ih azuriramo

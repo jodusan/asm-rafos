@@ -11,7 +11,6 @@
 
 %include "OS_API.inc"
 org app_main
-	;call _dump_registers
     mov si, Naslov
     call _print_string
     ret

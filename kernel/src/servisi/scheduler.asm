@@ -27,7 +27,6 @@ _init_scheduler:
 	mov byte [sch_queue], 0 			; u queue ubacimo shell proces
 	mov byte [sch_queue_size], 1
 	mov byte [sch_mmt], 0FFh   			; svi memorijski segmenti osim nultog su slobodni (u nuli je shell)
-
 	push ds  							; sacuvamo sadrzaj ds-a jer ga int 08h menja u 040h 
 	pop gs 
 
@@ -109,6 +108,7 @@ _ubaci_proces:
 	pop ax 								; na ax vratimo velicinu
 	call _update_scheduler
 
+	;DEBUG
 	call _dbg_dump
 
 	popa
@@ -153,12 +153,18 @@ _update_scheduler:
 	mov bx, cx
 	shl bx, 10
 	add bx, 8000h
+
+	; izracunaj cs koji cemo pushnut'
+	;push ax
+	;mov ax, cx
+	;shl ax, 6								; cs = ( 8000h + pid * 400h ) / 10h
+	;add ax, 800h							; skraceno: cs = 800h + pid * 40h
 	
 	; ubaci predefinisane vrednosti na stack novog procesa
-	push _izbaci_proces
-	push bx									; ubaci adresu na koju ce proces da skoci nakon ret-a
-	push cs
-	pushf									; ubacimo prethodno izracunatu adresu na ip (odakle ce se skidati ip)
+	push _izbaci_proces 					; ubaci adresu na koju ce proces da skoci nakon ret-a
+	pushf								
+	push cs 								; ovo je u stvari izracunati cs
+	push bx									; ubacimo prethodno izracunatu adresu na ip (odakle ce se skidati ip)
 	push ax
 	push bx
 	push cx
@@ -167,14 +173,15 @@ _update_scheduler:
 	push si
 	push di
 
+	;pop ax 									; vrati ax
+
 	; vrati stack i na bx pomeri adresu stack-a novog procesa (na koji su ubacene predefinisane vrednosti)
 	mov bx, sp
 	mov sp, dx
 
-	call _dump_registers
-
 	; update sch_stacks
 	mov si, sch_stacks
+	add si, cx
 	add si, cx
 	mov word [si], bx
 	
@@ -238,6 +245,7 @@ _izbaci_proces:
 	out 070h, al						; Dozvoli prekide
 	sti
 
+	;DEBUG
 	call _dbg_dump
 	jmp $								; cekamo prekidnu rutinu za scheduler
 
@@ -261,9 +269,12 @@ _dbg_string_start 	db '---- DEBUG INFO -----', 13, 10, 0
 _dbg_active_proc 	db 'sch_active_proc: ', 0
 _dbg_sizes_content  db 'sch_sizes: ', 0
 _dbg_queue_content  db 'sch_queue: ', 0
-_dbg_queue_size db 'sch_queue_size: ', 0
+_dbg_queue_size 	db 'sch_queue_size: ', 0
 _dbg_mmt_hex 		db 'mmt_hex: ', 0
+_dbg_stacks 		db 'sch_stacks: ', 0
 _dbg_string_end 	db '---- DEBUG INFO END -----', 13, 10, 0
+
+
 _dbg_dump:
 	pusha
 	call _print_newline
@@ -313,7 +324,7 @@ _dbg_dump:
 	; queue size sring: value
 	mov si, _dbg_queue_size
 	call _print_string
-	xor ax,ax
+	xor ax, ax
 	mov al, byte [sch_queue_size]
 	call _print_digit
 	call _print_newline
@@ -335,5 +346,37 @@ _dbg_dump:
 	mov si, _dbg_string_end
 	call _print_string
 	call _print_newline
+	popa
+	ret
+
+_dbg_dump_stacks:
+	pusha
+
+	call _print_newline
+
+	mov si, _dbg_string_start
+	call _print_string
+
+	mov si, _dbg_stacks
+	call _print_string
+
+	mov si, sch_stacks
+	xor ch, ch
+	mov cl, byte [sch_queue_size]
+.petlja:
+	mov ax, word [si]
+	call _print_4hex
+	call _print_space
+	inc si
+	inc si
+	loop .petlja 
+
+	call _print_newline	
+
+	mov si, _dbg_string_end
+	call _print_string
+
+	call _print_newline	
+
 	popa
 	ret

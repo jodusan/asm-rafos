@@ -36,10 +36,10 @@
 %define     NULL 0
 %define     DELIMIT '/'                     ; Oznaka za prompt delimiter
 
-        app_start   equ  8000h
-        app_seg     equ  app_start/10h
-        input       equ  app_start - 256            ; Deljeni bafer za OS i aplikacije
-        arg1        equ  app_start - 128            ; Bafer za prvi argument komandne linije
+app_start   equ  8400h
+app_seg     equ  app_start/10h
+input       equ  app_start - 256            ; Deljeni bafer za OS i aplikacije
+arg1        equ  app_start - 128            ; Bafer za prvi argument komandne linije
 
 _command_line:
     call    _clear_screen
@@ -51,7 +51,7 @@ _command_line:
     mov     ax, app_start               ; Prosledjuemo interpreteru pocetak programa 
     call    _run_batch                  ; Pokrecemo BATCH Intepreter
 
-Ispisi_verziju:		       
+Ispisi_verziju:       
         mov     si, pozdrav
         call    _print_string
         mov     si, verzija
@@ -99,12 +99,12 @@ Komanda:
         jc near clear_screen
 
         mov     di, dir_string              ; dir?
-		mov		cl, 3
+	mov	cl, 3
         call    _string_strincmp
         jc near list_directory
         
         mov     di, ls_string               ; Unix dir?
-		mov		cl, 2
+	mov	cl, 2
         call    _string_strincmp
         jc near list_directory
 
@@ -155,38 +155,38 @@ Komanda:
         call    _string_strincmp
         jc near copy_file
  
-		mov     di, attrib_string           ; attrib?
-		mov 	cl,6
+	mov     di, attrib_string           ; attrib?
+	mov 	cl,6
         call    _string_strincmp
         jc near attributes
  
-		mov		di, md_string				; Make dir?
-		mov		cl, 2
-		call	_string_strincmp
-		jc near make_dir
+	mov	di, md_string	            ; Make dir?
+	mov	cl, 2
+	call	_string_strincmp
+	jc near make_dir
 		
-		mov		di, cd_string				; Change dir?
-		mov		cl, 2
-		call	_string_strincmp
-		jc near change_dir
+	mov	di, cd_string               ; Change dir?
+	mov	cl, 2
+	call	_string_strincmp
+	jc near change_dir
 		
-		mov		di, rd_string				; Remove dir?
-		mov		cl, 2
-		call	_string_strincmp
-		jc near remove_dir
+	mov	di, rd_string		    ; Remove dir?
+	mov	cl, 2
+	call	_string_strincmp
+	jc near remove_dir
+	
+	mov	di, a_string		    ; A:?
+	call	_string_compare
+	jc near change_disc
 		
-		mov		di, a_string				; A:?
-		call	_string_compare
-		jc near change_disc
+	mov	di, b_string		    ; B:?
+	call	_string_compare
+	jc near change_disc
 		
-		mov		di, b_string				; B:?
-		call	_string_compare
-		jc near change_disc
-		
-		mov		di, path_string				; PATH?
-		mov		cl, 4
-		call	_string_strincmp
-		jc near path
+	mov	di, path_string		    ; PATH?
+	mov	cl, 4
+	call	_string_strincmp
+	jc near path
         
 ; --------------------------------------------------------------------------
 ; Ako korisnik nije zadao nijednu od prethodnih internih komandi, potrebno 
@@ -197,7 +197,7 @@ ProveriIzvrsnu:
 	mov	si, temp_input
         mov     di, input                   
 	call	_string_copy
-	mov	si, input					; Resavamo problem prenosenja parametara sa komandne linije
+	mov	si, input                   ; Resavamo problem prenosenja parametara sa komandne linije
         call    _string_parse
         mov     si, ax
         mov     di, arg0                    ; arg0 je komanda (ime eksternog programa) 
@@ -261,18 +261,33 @@ PunoIme:
         mov     di, BinEkstenzija           ; Da li je 'BIN'?
         call    _string_compare
         jnc     ComDatoteka               
-   
-        call    _ubaci_proces
-        jnc     .markonastavi
-        mov     si, stop_msg
-        call    _print_string
-        call    _dump_registers
-.markonastavi
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        mov     ax, arg0
 
-        ;call    app_start                   ; Poziv ucitanog programa        
-	;	mov		ax, (prompt+9)              ; Path pocetak
-	;	call	_change_folder_path
-	;	mov word [tempBrojac], 0
+        call    _ubaci_proces
+
+;         ;pusha
+;         mov     word [sch_stacks], sp
+
+;         mov     byte [sch_active_proc], 1
+;         mov     si, sch_stacks
+;         add     si, 1
+;         mov     sp, word [si]
+
+;         push .dalje
+;         push _izbaci_proces 
+;         ;ret
+;         jmp 8400h
+; .dalje:
+;         ;popa
+;         mov     sp, word [sch_stacks]
+
+        ;call    app_start                   ; Poziv ucitanog programa    
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    
+ 	mov		ax, (prompt+9)              ; Path pocetak
+ 	call	_change_folder_path
+ 	mov word [tempBrojac], 0
         jmp     Komanda                     ; Po zavrsetku programa, ponovo se startuje shell
 
 ; --------------------------------------------------------
@@ -1040,19 +1055,19 @@ GreskaPisanja:                              ; Zajednicko za sve operacije koje i
         ren_string      db 'REN', 0
         del_string      db 'DEL', 0
         rm_string       db 'RM', 0
-		md_string  		db 'MD', 0
-		cd_string		db 'CD', 0
-		rd_string		db 'RD', 0
-		a_string		db 'A:', 0
-		b_string		db 'B:', 0
-		path_string		db 'PATH', 0
-		attrib_string   db 'ATTRIB', 0
+	md_string  	db 'MD', 0
+	cd_string	db 'CD', 0
+	rd_string	db 'RD', 0
+	a_string	db 'A:', 0
+	b_string	db 'B:', 0
+	path_string	db 'PATH', 0
+	attrib_string   db 'ATTRIB', 0
         
-		autoexec_string db 'AUTOEXEC.BAT', 0		
+	autoexec_string db 'AUTOEXEC.BAT', 0		
         kern_string     db 'KERNEL.BIN', 0
         NeMozeKernel    db 'Nije moguce izvrsavati datoteku kernela!', 13, 10, 0
 		
-		PathSpace		times 256 db 0
-		temp_input		times 128 db 0
+	PathSpace		times 256 db 0
+	temp_input		times 128 db 0
 
   

@@ -23,7 +23,7 @@
 _main:
         mov     ax, 0           
         mov     ss, ax                      ; Segment koji koristi BIOS
-        mov     sp, 0FFFFh                  ; Inicijalizacija stek pointera na vrh steka
+        mov     sp, 08FFFh                  ; Inicijalizacija stek pointera na vrh steka
         cld                                 ; Pravac operacija sa stringovima (ka rastucim adresama)
 
         mov     ax, cs                      ; Podesavanje svih segmenata na segment gde se ucitava kernel.
@@ -37,8 +37,8 @@ _main:
         int     10h
         call    _seed_random                ; Seed za generator slucajnih brojeva 
 
-        call    _clear_screen               ; Startovati komandni interpreter      
-        call	_init_scheduler
+        call    _clear_screen               ; Startovati komandni interpreter 
+        call    _init_scheduler
         call 	set_interrupts
         call 	_command_line
         jmp 	$							; obrisi ovaj hakzor

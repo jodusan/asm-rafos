@@ -15,7 +15,7 @@
 ; Vazne memorijske lokacije
 
 os_main         equ 0000h                   ; Prostor kernela
-app_main        equ 8000h                   ; Prostor korisnika
+app_main        equ 8400h                   ; Prostor korisnika
 
 input           equ app_main - 100h         ; Deljene oblasti izmedju
 arg1            equ app_main - 080h         ; kernela i korisnika

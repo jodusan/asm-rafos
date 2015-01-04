@@ -34,7 +34,6 @@
 
 %define     RAZMAK 20                       ; Broj praznih mesta odakle pocinje formatirano ispisivanje
 %define     DATE_DELIMIT '/'                ; Oznaka za delimiter datuma
-%define     DELIMIT '/'                     ; Oznaka za prompt delimiter
 
 _get_dir:
         pusha

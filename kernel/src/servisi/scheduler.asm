@@ -1,3 +1,20 @@
+; =============================================================================
+; Univerzitet Union, Racunarski fakultet u Beogradu
+; 08.2008. Operativni sistemi
+; =============================================================================
+; RAF_OS -- Trivijalni skolski operativni sistem
+; Scheduler - RAF_OS multitasking 
+;
+; 
+; Pogledati u prekidi.asm scheduler rutinu na int 08h.
+; -----------------------------------------------------------------------------
+; Inicijalna verzija 0.0.1 (Marko Bakovic, Sasa Vuckovic, Dusan Josipovic, 01.01.2015.).
+;
+; -----------------------------------------------------------------------------
+
+
+
+
 ; --------------------------------------------------------------------------
 ; _init_scheduler -- Inicijalizuje scheduler tabele i postavlja shell kao
 ; jedini proces
@@ -5,10 +22,15 @@
 _init_scheduler: 
 	mov byte [sch_active_proc], 0		; trenutno aktivan proces je shell ciji je pid = 0
 	mov byte [sch_sizes], 1 			; shell procesu dodeljujemo 1kb (sch_sizes[0])
-	mov word [sch_stacks], sp			; izdvajamo 28kB od 0FFFFh (dno SS-a) za druge procese, a shell dobije od 28kB na gore
+	mov word [sch_stacks], sp			; izdvajamo 28kB od 0FFFFh (dno SS-a) za druge procese,
+										; a shell dobije od 28kB na gore
 	mov byte [sch_queue], 0 			; u queue ubacimo shell proces
 	mov byte [sch_queue_size], 1
-	mov dword [sch_mmt], 1   			; svi memorijski segmenti osim nultog su slobodni (u nuli je shell)
+	mov byte [sch_mmt], 0FFh   			; svi memorijski segmenti osim nultog su slobodni (u nuli je shell)
+
+	push ds  							; sacuvamo sadrzaj ds-a jer ga int 08h menja u 040h 
+	pop gs 
+
 	ret
 
 ; --------------------------------------------------------------------------
@@ -17,84 +39,100 @@ _init_scheduler:
 ; Izlaz: CF=1 ukoliko nema trazene datoteke ili nije moguce ucitati datoteku u
 ; memoriju verovatno zato sto nema dovoljno memorije
 ; --------------------------------------------------------------------------
-_ubaci_proces:	; TODO: PUSH/POP registre
+_ubaci_proces:
 	pusha
-	push ax
+	push ax 							; sacuvamo ime datoteke na stack-u
+
+	; odredimo velicinu fajla
+	xor bx, bx
 	clc
 	call _get_file_size
-	clc
-	jnc .nadjen_fajl					; ako je cf = 1 fajl ne postoji
+	cmp bx, 0
+	jne .nadjen_fajl
+
 	pop ax
 	popa
 	ret
 .nadjen_fajl:
-	call _dump_registers
 	mov ax, bx							; pretvaramo velicinu u kb
-	xor dx, dx
-	mov bx, 1024
-	div bx
-	cmp dx, 0
-	je	.nastavi
-	inc ax
-	call _dump_registers
-.nastavi:
+	xor dx, dx							; cistimo dx registar jer zelimo da delimo
+	mov bx, 1024 						; dx(prazan):ax(velicina u bajtovima) sa bx(1024)
+	div bx 								; da dobijemo broj kilobajtova u ax
+	cmp dx, 0 							; ako ne postoji ostatak kul idemo dalje
+	je	.sch_nastavi 						
+	inc ax 								; ako postoji samo povecaj ax da bi mu dali dovoljno mesta
+.sch_nastavi:
 	mov cx, 1
 	mov	bx, 0           				; brojac slobodnih memorijskih jedinica do cx-te
 .petlja:
-	push bx
-	mov	bx, 1
-	shl bx, cl
-	test [sch_mmt], bx					; testiramo cx-ti bit u mmt-u
-	jnz .resetuj_brojac
-	pop bx
+	mov	si, cx
+	add si, sch_mmt
+	cmp byte [si], 0					; testiramo cx-ti bajt u mmt-u
+	jne .resetuj_brojac					; ako nije slobodno skoci na resetuj brojac 
+
 	inc bx
 	cmp bx, ax
-	jl .sledeci_bit
-										; proces ucitavamo na lokacije [cx - ax(=bx) + 1, cx], a njegov pid je cx - ax + 1
+	jl .sledeci_bajt
+										; proces ucitavamo na lokacije [cx - ax(=bx) + 1, cx],
+										; a njegov pid je cx - ax + 1
 	sub cx, ax
 	inc cx								; na cx izracunamo pid								
 	jmp .nadjen_pid						
 .resetuj_brojac
-	pop bx
-	mov bx, 0
-.sledeci_bit:
+	xor bx, bx
+.sledeci_bajt:
 	inc cx
 	cmp cx, 29
 	jl .petlja
+	mov si, sch_no_memory_error
+	call _print_string
 	stc
 	pop ax
 	popa 								; postavimo CF jer nismo nasli slobodnu memoriju
 	ret 
 .nadjen_pid:
-	call _update_scheduler
-	call _dump_registers
+	mov dx, ax
 	pop ax
-	popa
-	mov bx, cx
+
+	push dx 							; ubacimo velicinu na stack
+	push cx 							; ubacimo pid na stack
+
+	mov bx, cx 							; na bx izracunamo gde program treba da se ucita
 	shl bx, 10
 	add bx, 8000h
-	mov cx, bx
-	call _load_file
+	mov cx, bx 							; pomerimo adresu na cx jer se tako prosledjuje u _load_file_current_folder
+	xor bx, bx
+
+	call _load_file_current_folder		; ucitamo program u memoriju
+
+	pop cx 								; na cx vratimo pid
+	pop ax 								; na ax vratimo velicinu
+	call _update_scheduler
+
+	call _dbg_dump
+
+	popa
 	ret
 
 ; --------------------------------------------------------------------------
-; _update_scheduler -- Update-uje sch_mmt, sch_sizes, sch_queue... 
-; Ulaz: AX = velicina, CL = pid procesa
+; _update_scheduler -- Update-uje sch_mmt, sch_sizes, sch_queue...
+;  Ucitava program u memoriju 
+; Ulaz: AX = velicina, CX = pid procesa
 ; --------------------------------------------------------------------------
 _update_scheduler:
 	pusha
 
-	xor ch, ch
-
 	; update memory management table
-	mov bx, 1
-	xchg ax, cx
-	shl bx, cl
-	xchg ax, cx
-	dec bx 								; 2^ax - 1
-	shl bx, cl
-	or 	[sch_mmt], bx
-	
+	mov si, cx
+	add si, sch_mmt
+	push cx
+	mov cx, ax
+.petlja:
+	mov	byte [si], 0FFh
+	inc si
+	loop .petlja
+	pop cx
+
 	; update sch_sizes
 	mov si, sch_sizes
 	add si, cx
@@ -107,8 +145,33 @@ _update_scheduler:
 	shl bx, 10
 	add bx, 08FFFh
 
-	sub bx, 2 							; odvojimo 2 bajta na dnu stack-a za labalu _izbaci_proces na koju ce proces da skoci nakon ret-a
-	mov word [bx], word _izbaci_proces 
+	; privremeno zameni stack
+	mov dx, sp
+	mov sp, bx
+
+	; izracunaj adresu gde ce program biti ucitan
+	mov bx, cx
+	shl bx, 10
+	add bx, 8000h
+	
+	; ubaci predefinisane vrednosti na stack novog procesa
+	push _izbaci_proces
+	push bx									; ubaci adresu na koju ce proces da skoci nakon ret-a
+	push cs
+	pushf									; ubacimo prethodno izracunatu adresu na ip (odakle ce se skidati ip)
+	push ax
+	push bx
+	push cx
+	push dx
+	push bp
+	push si
+	push di
+
+	; vrati stack i na bx pomeri adresu stack-a novog procesa (na koji su ubacene predefinisane vrednosti)
+	mov bx, sp
+	mov sp, dx
+
+	call _dump_registers
 
 	; update sch_stacks
 	mov si, sch_stacks
@@ -120,9 +183,12 @@ _update_scheduler:
 	out 070h, al 	
 
 	mov si, sch_queue
-	add si, [sch_queue_size]
-	mov [si], cx
-	inc byte [sch_queue_size]
+	xor ax, ax
+	mov al, byte [sch_queue_size]
+	add si, ax							; u niz sch_queue, na sch_queue+sch_queue_size dodaj novi
+	mov byte [si], cl 					; proces sa pidom cx
+
+	inc byte [sch_queue_size] 			; povecavamo velicinu queue-a
 	
 	xor al, al							; Dozvoli NMI prekide
 	out 070h, al						; Dozvoli prekide
@@ -135,12 +201,139 @@ _update_scheduler:
 ; _izbaci_proces -- Brise proces pid iz queue-a, update-uje mmt i ostalo 
 ; --------------------------------------------------------------------------
 _izbaci_proces:
+	xor ch, ch
+	mov cl, byte [sch_active_proc]		; na cx vratimo pid
+	
+	mov si, sch_sizes
+	add si, cx
+	xor ah, ah
+	mov al, byte [si]					; na ax vratimo velicinu
+
+	; update sch_sizes
+	mov si, sch_sizes
+	add si, cx
+	mov byte [si], 0
+
+	; update memory management table
+	mov si, cx
+	add si, sch_mmt
+	push cx
+	mov cx, ax
+
+	cli									; Zabrani prekide. 
+	mov al, 080h						; Zabrani NMI prekide
+	out 070h, al 	
+
+.petlja:								; ocisti mmt
+	mov byte [si], 0
+	inc si
+	loop .petlja
+
+	pop cx
+
+	dec byte [sch_queue_size]			; proces koji se izvrsava je na kraju queue-a,
+										; tako da samo smanjimo qeueu_size
+
+	xor al, al							; Dozvoli NMI prekide
+	out 070h, al						; Dozvoli prekide
+	sti
+
+	call _dbg_dump
+	jmp $								; cekamo prekidnu rutinu za scheduler
+
 	ret
 
-sch_test db 'Pa cao iz schedulera!', 13, 10, 0
+sch_no_memory_error db 'Nema dovoljno memorije!', 13, 10, 0
+sch_active_proc db 0					; trenutno aktivan proces
+sch_sizes times 32 db 0					; velicine procesa(kB), primer sch_sizes[1] 
+										; je velicina procesa ciji je pid = 1
+sch_stacks times 32 dw 0				; stack pointeri procesa, primer sch_stacks[1] je sp ciji je pid = 1
 sch_queue times 32 db 0					; queue pid-ova koji cekaju na izvrsavanje
 sch_queue_size db 0						; broj pid-ova u queue (broj aktivnih procesa)
-sch_stacks times 32 dw 0				; stack pointeri na procese, primer sch_stacks[1] je stack pointer ciji je pid = 1
-sch_sizes times 32 db 0					; velicine procesa u kb, primer sch_sizes[1] je velicina procesa ciji je pid = 1
-sch_active_proc db 0					; trenutno aktivan proces
-sch_mmt dw 0   							; 28 bitova najmanje tezine odredjuju zauzete memorijske prostore
+sch_mmt times 32 db 0   				; tabela zauzetih memorijskih prostora
+
+
+; --------------------------------------------------------------------------
+; DEBUG
+; --------------------------------------------------------------------------
+
+_dbg_string_start 	db '---- DEBUG INFO -----', 13, 10, 0
+_dbg_active_proc 	db 'sch_active_proc: ', 0
+_dbg_sizes_content  db 'sch_sizes: ', 0
+_dbg_queue_content  db 'sch_queue: ', 0
+_dbg_queue_size db 'sch_queue_size: ', 0
+_dbg_mmt_hex 		db 'mmt_hex: ', 0
+_dbg_string_end 	db '---- DEBUG INFO END -----', 13, 10, 0
+_dbg_dump:
+	pusha
+	call _print_newline
+	mov si, _dbg_string_start
+	call _print_string
+	
+	; active process string: value
+	mov si, _dbg_active_proc
+	call _print_string
+	xor ax,ax
+	mov  al, byte [sch_active_proc]
+	call _print_digit
+	call _print_newline
+
+	; sizes content petlj
+	mov si, _dbg_sizes_content
+	call _print_string
+	mov cx, 32
+	mov si, sch_sizes
+
+	.dbg_petlja2:
+	mov al, byte [si]
+	call _print_2hex
+	inc si
+	loop .dbg_petlja2
+
+	call _print_newline
+
+	; queue content petlj
+	mov si, _dbg_queue_content
+	call _print_string
+	xor ch, ch
+	mov cl, byte [sch_queue_size]
+	mov si, sch_queue
+
+	.dbg_petlja:
+	mov al, byte [si]
+	call _print_2hex
+	inc si
+	loop .dbg_petlja
+
+	;mov al, byte[sch_queue + 1]
+	;call _print_2hex
+
+	call _print_newline	
+
+	; queue size sring: value
+	mov si, _dbg_queue_size
+	call _print_string
+	xor ax,ax
+	mov al, byte [sch_queue_size]
+	call _print_digit
+	call _print_newline
+
+	; mmt string: value (u hexu) - littleendian-bigendian 
+	mov si, _dbg_mmt_hex
+	call _print_string
+	mov cx, 32
+	mov si, sch_mmt
+
+	.dbg_petlja3:
+	mov al, byte [si]
+	call _print_2hex
+	inc si
+	loop .dbg_petlja3
+
+	call _print_newline	
+
+	mov si, _dbg_string_end
+	call _print_string
+	call _print_newline
+	popa
+	ret

@@ -21,20 +21,20 @@
 ; --------------------------------------------------------------------------
 _init_scheduler: 
 	mov byte [sch_active_proc], 0		; trenutno aktivan proces je shell ciji je pid = 0
+	mov byte [sch_fg], 0 				; shell je u foreground-u
+	mov byte [sch_kills], 0
 	mov byte [sch_sizes], 1 			; shell procesu dodeljujemo 1kb (sch_sizes[0])
 	mov word [sch_stacks], sp			; izdvajamo 28kB od 0FFFFh (dno SS-a) za druge procese,
 										; a shell dobije od 28kB na gore
 	mov byte [sch_queue], 0 			; u queue ubacimo shell proces
 	mov byte [sch_queue_size], 1
-	mov byte [sch_mmt], 0FFh   			; svi memorijski segmenti osim nultog su slobodni (u nuli je shell)
-	push ds  							; sacuvamo sadrzaj ds-a jer ga int 08h menja u 040h 
-	pop gs 
+	mov byte [sch_mmt], 0FFh   			; svi memorijski segmenti osim nultog su slobodni (u nuli je shell) 
 
 	ret
 
 ; --------------------------------------------------------------------------
 ; _ubaci_proces -- Ucitava proces u memoriju
-; Ulaz: AX = datoteka;
+; Ulaz: AX = datoteka
 ; Izlaz: CF=1 ukoliko nema trazene datoteke ili nije moguce ucitati datoteku u
 ; memoriju verovatno zato sto nema dovoljno memorije
 ; --------------------------------------------------------------------------
@@ -102,14 +102,23 @@ _ubaci_proces:
 	mov cx, bx 							; pomerimo adresu na cx jer se tako prosledjuje u _load_file_current_folder
 	xor bx, bx
 
+	push ax 							; ubacimo ime na stack 
+
 	call _load_file_current_folder		; ucitamo program u memoriju
 
+	pop ax 								; na ax vratimo ime
 	pop cx 								; na cx vratimo pid
+
+	; sacuvamo ime procesa u tabelu imena
+	mov si, ax
+	mov di, sch_names
+	mov bx, cx
+	shl bx, 5 							; pid * 32
+	add di, bx
+	call _string_copy
+
 	pop ax 								; na ax vratimo velicinu
 	call _update_scheduler
-
-	;DEBUG
-	call _dbg_dump
 
 	popa
 	ret
@@ -149,31 +158,29 @@ _update_scheduler:
 	mov dx, sp
 	mov sp, bx
 
-	; izracunaj adresu gde ce program biti ucitan
+	; izracunaj segmente za novi proces
 	mov bx, cx
-	shl bx, 10
-	add bx, 8000h
-
-	; izracunaj cs koji cemo pushnut'
-	;push ax
-	;mov ax, cx
-	;shl ax, 6								; cs = ( 8000h + pid * 400h ) / 10h
-	;add ax, 800h							; skraceno: cs = 800h + pid * 40h
+	shl bx, 6								; cs = 2000h + ( 8000h + pid * 400h ) / 10h
+	add bx, 2800h							; skraceno: cs = 2000h + 800h + pid * 40h
 	
 	; ubaci predefinisane vrednosti na stack novog procesa
-	push _izbaci_proces 					; ubaci adresu na koju ce proces da skoci nakon ret-a
+
 	pushf								
-	push cs 								; ovo je u stvari izracunati cs
-	push bx									; ubacimo prethodno izracunatu adresu na ip (odakle ce se skidati ip)
+
+	push bx 								; ovo je u stvari izracunati cs
+	push 0									; ubacimo ip = 0
+	push bx									; ds
+	push bx									; gs
+	push bx									; es
+	push bx									; fs
+
 	push ax
 	push bx
 	push cx
 	push dx
 	push bp
 	push si
-	push di
-
-	;pop ax 									; vrati ax
+	push di 								; ubaci registre
 
 	; vrati stack i na bx pomeri adresu stack-a novog procesa (na koji su ubacene predefinisane vrednosti)
 	mov bx, sp
@@ -184,6 +191,11 @@ _update_scheduler:
 	add si, cx
 	add si, cx
 	mov word [si], bx
+
+	; update sch_kills
+	mov si, sch_kills
+	add si, cx
+	mov byte [si], 0
 	
 	cli									; Zabrani prekide. 
 	mov al, 080h						; Zabrani NMI prekide
@@ -205,9 +217,26 @@ _update_scheduler:
 	ret
 
 ; --------------------------------------------------------------------------
+; _to_foreground -- Postavlja proces u foreground.
+; Ulaz: AX = pid procesa
+; --------------------------------------------------------------------------
+;SMISLITI STA DA RADIMO SA OVIM
+
+
+; --------------------------------------------------------------------------
 ; _izbaci_proces -- Brise proces pid iz queue-a, update-uje mmt i ostalo 
 ; --------------------------------------------------------------------------
 _izbaci_proces:
+	
+	push sys
+	pop ds
+	push sys
+	pop es
+	push sys
+	pop gs
+	push sys
+	pop fs
+	
 	xor ch, ch
 	mov cl, byte [sch_active_proc]		; na cx vratimo pid
 	
@@ -241,25 +270,118 @@ _izbaci_proces:
 	dec byte [sch_queue_size]			; proces koji se izvrsava je na kraju queue-a,
 										; tako da samo smanjimo qeueu_size
 
+	; proveri da li je proces bio u foreground-u i ako jeste vrati shell u foreground
+	mov cl, byte [sch_active_proc]
+	mov al, byte [sch_fg]
+	cmp al, 0 							; ako je shell u foreground-u cekaj
+	je .cekaj
+	cmp cl, al
+	jne .cekaj
+	
+	; ubaci shell u queue
+	mov cl, 0 							; na cl postavimo pid shell-a
+
+	; ubacimo shell u queue
+	mov si, sch_queue
+	xor ax, ax
+	mov al, byte [sch_queue_size]
+	add si, ax							
+	mov byte [si], cl 					
+
+	inc byte [sch_queue_size]
+
+	mov byte [sch_fg], 0
+
+.cekaj:
+
 	xor al, al							; Dozvoli NMI prekide
 	out 070h, al						; Dozvoli prekide
 	sti
 
-	;DEBUG
-	call _dbg_dump
 	jmp $								; cekamo prekidnu rutinu za scheduler
 
 	ret
 
+; --------------------------------------------------------------------------
+; _kill_pid -- Ubija proces
+; Ulaz: AX - pid procesa
+; --------------------------------------------------------------------------
+_kill_pid:
+	pusha
+
+	mov si, sch_kills
+	add si, ax
+	mov byte [si], 1  					; za ubijanje
+
+	popa
+	ret
+
+
+; --------------------------------------------------------------------------
+; _print_pids -- Stampa pid - ime proces za aktivne procese
+; --------------------------------------------------------------------------
+_print_pids:
+	pusha
+
+	call _print_newline
+	mov si, sch_pids_string_start
+	call _print_string
+
+	mov si, sch_queue
+	xor ch, ch
+	mov cl, byte [sch_queue_size]
+
+.petlja:
+	
+	xor ah, ah
+	mov al, byte [si]
+
+	push si
+
+	cmp ax, 0 							; preskacemo shell
+	je .sledeci
+
+	cmp ax, 10
+	jge .print 
+	call _print_space
+.print:
+	call _print_dec						; odstampamo pid
+
+	call _print_space
+
+	mov si, sch_names
+	shl ax, 5 							; pid * 32
+	add si, ax
+	call _print_string 					; odstampamo ime
+
+	call _print_newline
+
+.sledeci:
+	pop si
+	inc si
+
+	loop .petlja
+	
+	mov si, sch_pids_string_end
+	call _print_string
+
+	popa
+	ret
+
 sch_no_memory_error db 'Nema dovoljno memorije!', 13, 10, 0
 sch_active_proc db 0					; trenutno aktivan proces
+sch_fg db 0 							; pid procesa u foreground-u
 sch_sizes times 32 db 0					; velicine procesa(kB), primer sch_sizes[1] 
 										; je velicina procesa ciji je pid = 1
 sch_stacks times 32 dw 0				; stack pointeri procesa, primer sch_stacks[1] je sp ciji je pid = 1
 sch_queue times 32 db 0					; queue pid-ova koji cekaju na izvrsavanje
 sch_queue_size db 0						; broj pid-ova u queue (broj aktivnih procesa)
 sch_mmt times 32 db 0   				; tabela zauzetih memorijskih prostora
+sch_kills times 32 db 0  				; tabela procesa koji treba da budu ubijeni (kada oni dodju na red za izvrsavanje)
 
+sch_names times 1024 db 0               ; tabela imena pokrenutih procesa, 32x32
+sch_pids_string_start db '==== Aktivni procesi ( pid proces ) ====', 13, 10, 0
+sch_pids_string_end db   '========================================', 13, 10, 0
 
 ; --------------------------------------------------------------------------
 ; DEBUG

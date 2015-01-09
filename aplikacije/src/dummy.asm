@@ -10,9 +10,11 @@
 ; ------------------------------------------------------------------
 
 %include "OS_API.inc"
-org app_main
-    mov si, Naslov
-    call _print_string
+;org app_main
+
+    mov ax, 0FFh
+    jmp $
+    call _OS:_sys_exit
     ret
 
 Naslov  db 'RAF_OS dummy', 13, 10, 0

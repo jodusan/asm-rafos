@@ -18,6 +18,7 @@
 _print_string:
         pusha
         mov     ah, 0Eh                     ; BIOS INT 10h teletype (TTY) funcija
+
 .Ponavljaj:
         lodsb                               ; Uzmi jedan znak iz stringa
         cmp     al, 0
@@ -277,7 +278,7 @@ _dump_string:
 
 ; --------------------------------------------------------------
 ; _print_digit -- Ispisuje sadrzaj AX kao cifru 
-; Radi sa osnovama do 37, tj. ciframa  0-Z
+; Radi sa osnovama do 36, tj. ciframa  0-Z
 ; Ulaz: AX = "cifra" koji treba formatirati i ispisati
 ; --------------------------------------------------------------
 
@@ -332,6 +333,29 @@ _print_4hex:
         call    _print_2hex
         pop     ax                          ; Ispisati donji bajt
         call    _print_2hex
+        popa
+        ret
+
+; -------------------------------------------------------
+; _print_dec -- Ispisuje AX u dekadnom formatu
+; Ulaz: AX = broj koji je potrebno ispisati
+; -------------------------------------------------------
+
+_print_dec:
+        pusha
+        xor cx, cx
+        mov bx, 10
+    .petlja:
+        xor dx, dx
+        div bx
+        push dx
+        inc cx
+        cmp ax, 0
+        jg .petlja
+    .petlja2:
+        pop ax
+        call _print_digit
+        loop .petlja2
         popa
         ret
 

@@ -17,6 +17,7 @@
     %define RAF_OS_API_VER 1                ; API verzija (proveravaju je aplikacije)
     
      DiskBafer equ 6000h
+     sys       equ 2000h                    ; Segment u kome radi kernel
     
     %include "vektor.inc"
 

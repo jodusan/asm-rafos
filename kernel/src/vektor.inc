@@ -80,4 +80,5 @@
     jmp _run_batch            ; 00C6h
     jmp _port_byte_out        ; 00C9h
     jmp _port_byte_in         ; 00CCh
-	jmp _print_file			  ; 00CFh	
+	jmp _print_file			  ; 00CFh
+    jmp _izbaci_proces        ; 00D2h	

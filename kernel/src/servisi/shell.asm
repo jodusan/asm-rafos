@@ -159,6 +159,16 @@ Komanda:
 	mov 	cl,6
         call    _string_strincmp
         jc near attributes
+
+        mov     di, pids_string             ; pids?
+        mov     cl, 4
+        call    _string_strincmp
+        jc near pids
+
+        mov     di, kill_string             ; kill?
+        mov     cl, 4
+        call    _string_strincmp
+        jc near kill
  
 	mov	di, md_string	            ; Make dir?
 	mov	cl, 2
@@ -284,9 +294,9 @@ PunoIme:
         ;call    app_start                   ; Poziv ucitanog programa    
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    
- 	;mov		ax, (prompt+9)              ; Path pocetak
- 	;call	_change_folder_path
- 	;mov word [tempBrojac], 0
+ 	mov		ax, (prompt+9)              ; Path pocetak
+ 	call	_change_folder_path
+ 	mov word [tempBrojac], 0
         jmp     Komanda                     ; Po zavrsetku programa, ponovo se startuje shell
 
 ; --------------------------------------------------------
@@ -595,11 +605,54 @@ attributes:
         mov     si, GreskaArgStr
         call    _print_string
         jmp     Komanda
+
+; ------------------------------------------------------------------
+
+pids:
+        call    _print_pids
+        jmp     Komanda
 		
 ; ------------------------------------------------------------------
 
+kill:
+        mov     si, input
+        call    _string_parse
+        cmp     bx, 0
+        jne     .ZadatPid
+        mov     si, NemaPid
+        call    _print_string
+        jmp     Komanda
+
+.ZadatPid:
+        mov     si, bx
+        call    _string_to_int
+
+        cmp     ax, 0
+        je      .LosPid
+        cmp     ax, 28
+        jg      .LosPid
+
+        call    _kill_pid
+
+        mov     si, UspesnoUbijenSt
+        call    _print_string
+        call    _print_dec
+        mov     si, UspesnoUbijenEd
+        call    _print_string
+
+        jmp     .Kraj
+
+.LosPid:
+        mov     si, LosPid
+        call    _print_string
+
+.Kraj:
+        jmp     Komanda
+                
+; ------------------------------------------------------------------
+
 cat_file:  
-	    mov     si, input
+	mov     si, input
         call    _string_parse
         cmp     bx, 0                       ; Da li je zadato i ime datoteke?
         jne     .ZadatoIme
@@ -1022,7 +1075,7 @@ GreskaPisanja:                              ; Zajednicko za sve operacije koje i
         prompt          db 13,10,'RAF_OS>A:/', 0
 		dodatniProstor	times 256 db 0
         HelpTekst       db 'Interne komande:',13,10,
-                        db 'DIR, TYPE, CLS, HELP, TIME, DATE, VER, COPY, REN, DEL, STOP, MD, RD, CD, PATH, ATTRIB', 13, 10, 0
+                        db 'DIR, TYPE, CLS, HELP, TIME, DATE, VER, COPY, REN, DEL, STOP, MD, RD, CD, PATH, ATTRIB, PIDS, KILL', 13, 10, 0
         NePostoji       db 'Ne postoji takva komanda ili program', 13, 10, 0
         NemaImena       db 'Nije zadato ime datoteke', 13, 10, 0
         NemaImena1      db 'Nije zadato ime direktorijuma', 13, 10, 0
@@ -1038,6 +1091,11 @@ GreskaPisanja:                              ; Zajednicko za sve operacije koje i
         Err_NE          db 'Direktorijum nije prazan', 13, 10, 0
         Err_WP          db 'Neispravna putanja', 13, 10, 0
         GreskaArgStr    db 'ATTRIB: Greska u argumentima.', 13, 10, 0
+        
+        NemaPid         db 'Nije zadat pid procesa', 13, 10, 0
+        LosPid          db 'Pid mora biti izmedju 1 i 28', 13, 10, 0
+        UspesnoUbijenSt db 'Proces sa pid-om ', 0
+        UspesnoUbijenEd db ' uspesno ubijen', 13, 10, 0
         
         exit_string     db 'STOP', 0
         help_string     db 'HELP', 0
@@ -1061,6 +1119,8 @@ GreskaPisanja:                              ; Zajednicko za sve operacije koje i
 	b_string	db 'B:', 0
 	path_string	db 'PATH', 0
 	attrib_string   db 'ATTRIB', 0
+        pids_string     db 'PIDS', 0
+        kill_string     db 'KILL', 0
         
 	autoexec_string db 'AUTOEXEC.BAT', 0		
         kern_string     db 'KERNEL.BIN', 0

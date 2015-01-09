@@ -105,12 +105,10 @@ novi_int08:									; Poziva stari int 08h pa zatim rutinu za stampanje
 		; ------------------------------------------------------------------------------------------
 		; SCHEDULER RUTINA
 		; ------------------------------------------------------------------------------------------														
-		push gs 							; Inicijalizujemo neke registre jer ih int 08h menja
-		pop ds
+		push ds 
+		push es 
 		push gs
-		pop es
-		push gs
-		pop fs
+		push fs	 								; guramo segmente na stek 
 
 		push ax
 		push bx
@@ -118,7 +116,16 @@ novi_int08:									; Poziva stari int 08h pa zatim rutinu za stampanje
 		push dx
 		push bp
 		push si
-		push di 								; guramo sve na stek 
+		push di 								; guramo registre na stek
+
+		push sys
+		pop ds
+		push sys
+		pop es
+		push sys
+		pop gs
+		push sys
+		pop fs
 
 		mov si, sch_stacks
 		xor ah, ah
@@ -157,6 +164,14 @@ novi_int08:									; Poziva stari int 08h pa zatim rutinu za stampanje
 		add si, ax	
 		mov sp, word [si]					; na sp stavljamo stek novog(trenutnog) procesa
 
+		; proveri da li je proces oznacen za ubijanje
+		mov si, sch_kills
+		add si, ax
+		xor ah, ah
+		mov al, byte [si]
+		cmp ax, 0
+		jne .za_ubijanje
+
 		pop di
 		pop si
 		pop bp
@@ -165,9 +180,21 @@ novi_int08:									; Poziva stari int 08h pa zatim rutinu za stampanje
 		pop bx
 		pop ax							; izvlacimo kontekst sa steka
 
+		pop fs 
+		pop gs 
+		pop es 
+		pop ds 							; izvlacimo segmente sa steka 
+
+		jmp .kraj
+
+	.za_ubijanje:
+		pushf
+		push sys
+		push _izbaci_proces
 		; ------------------------------------------------------------------------------------------
 		; SCHEDULER RUTINA KRAJ
 		; ------------------------------------------------------------------------------------------
+	.kraj:
 		iret
 		
 novi_int10:									; int 10h ne menja flagove tako da ne moramo da ih azuriramo

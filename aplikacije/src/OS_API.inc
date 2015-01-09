@@ -20,6 +20,9 @@ app_main        equ 8400h                   ; Prostor korisnika
 input           equ app_main - 100h         ; Deljene oblasti izmedju
 arg1            equ app_main - 080h         ; kernela i korisnika
 
+_OS 			    equ 2000h
+_sys_exit 			equ 00D2h
+
 ; ------------------------------------------------------------------
 ; Definicije boja
 
@@ -161,7 +164,7 @@ _dump_string        equ 006Fh
 _print_digit        equ 0072h	
 _print_1hex         equ 0075h	
 _print_2hex         equ 0078h	
-_print_4hex         equ 007Bh	
+_print_4hex         equ 007Bh
 _show_cursor        equ 008Ah	
 _hide_cursor        equ 008Dh	
 _dump_registers     equ 0090h	

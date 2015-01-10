@@ -10,18 +10,19 @@
 ; ---------------------------------------------------------------------------
 ; Inicijalna OS verzija 0.0.1. API verzija 1 (Stevan Milinkovic, 20.08.2010.)
 ; ---------------------------------------------------------------------------
-
-; ------------------------------------------------------------------
+; RAF_OS multitasking          API verzija 2 (Marko Bakovic, Sasa Vuckovic,
+;                                             Dusan Josipovic, 10.01,2015)
+; ---------------------------------------------------------------------------
 ; Vazne memorijske lokacije
 
-os_main         equ 0000h                   ; Prostor kernela
-app_main        equ 8400h                   ; Prostor korisnika
+OS 				equ 2000h 					; Segment kernela
+
+os_main         equ 0000h                   ; Offset kernela
 
 input           equ app_main - 100h         ; Deljene oblasti izmedju
 arg1            equ app_main - 080h         ; kernela i korisnika
 
-_OS 			    equ 2000h
-_sys_exit 			equ 00D2h
+_sys_exit 		equ 00D2h         			; Poziv za izlazak iz programa
 
 ; ------------------------------------------------------------------
 ; Definicije boja

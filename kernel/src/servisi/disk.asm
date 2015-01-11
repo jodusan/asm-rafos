@@ -986,8 +986,8 @@ _write_file:
 
 .Zavrseno:
         popa
-        clcf
-        ret
+        clc
+        retf
 
 .Greska:
   ;     mov     si, Greska_pisanja

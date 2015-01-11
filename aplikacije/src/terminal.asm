@@ -19,7 +19,7 @@
 ; ------------------------------------------------------------------
 
 %include "OS_API.inc"
-org app_main
+org os_main
 
 Start:
         call    _clear_screen

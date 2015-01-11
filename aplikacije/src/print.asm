@@ -11,9 +11,9 @@
 ; ----------------------------------------------------------------------
 
     %include "OS_API.inc"                   ; RAF_OS API
-    PocetakTeksta equ app_main + 1000h      ; Tekst datoteka se ucitava 4KB iza pocetka aplikacije
+    PocetakTeksta equ os_main + 1000h       ; Tekst datoteka se ucitava 4KB iza pocetka aplikacije
 
-    org app_main                            ; Svi aplikacioni programi se ucitavaju odavde
+    org os_main                            	; Svi aplikacioni programi se ucitavaju odavde
 	
 Start:
         cmp     byte [arg1], 0              ; Da li je zadato ime datoteke?

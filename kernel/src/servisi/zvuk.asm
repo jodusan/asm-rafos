@@ -28,7 +28,7 @@ _speaker_tone:
         or      al, 03h
         out     61h, al
         popa
-        ret
+        retf
 
 ; ------------------------------------------------------------------
 ; _speaker_off -- Iskljucuje zvucnik
@@ -41,4 +41,4 @@ _speaker_off:
         and     al, 0FCh
         out     61h, al
         pop     ax
-        ret
+        retf

@@ -27,7 +27,7 @@ _print_string:
         jmp    .Ponavljaj                   ; i idi na sledeci znak.
 .Kraj:
         popa
-        ret
+        retf
   
 ; ----------------------------------------------------
 ; _clear_screen -- Brise ekran (u boju pozadine)
@@ -37,7 +37,7 @@ _print_string:
 _clear_screen:
         pusha
         mov     dx, 0                       ; Kursor na pocetnu poziciju (gore levo)
-        call    _move_cursor
+        call    sys:_move_cursor
         mov     ah, 6                       ; Funkcija za skrol ekrana na gore
         mov     al, 0                       ; Ceo ekran
         mov     bh, 7                       ; Bela slova na crnoj pozadini (bice obrisano u crno)
@@ -46,7 +46,7 @@ _clear_screen:
         mov     dl, 79
         int     10h
         popa
-        ret
+        retf
 
 ; ----------------------------------------------------
 ; _move_cursor -- Pomera kursor
@@ -59,7 +59,7 @@ _move_cursor:
         mov     ah, 2                       ; BIOS funkcija za pomeranje kursora
         int     10h				
         popa
-        ret
+        retf
 
 ; -----------------------------------------------------
 ; _get_cursor_pos -- Polozaj kursora
@@ -74,7 +74,7 @@ _get_cursor_pos:
         mov     [.tmp], dx                  ; Sacuvati privremeno, zbog 'popa'
         popa
         mov     dx, [.tmp]                  
-        ret
+        retf
 
        .tmp dw 0
 
@@ -105,7 +105,7 @@ _print_horiz_line:
         jmp    .Ponovo
 .Kraj:
         popa
-        ret
+        retf
 
 ; ------------------------------------------------------
 ; _show_cursor -- Pikazi kursor
@@ -120,7 +120,7 @@ _show_cursor:
         mov     al, 3                       ; Ovo znaci 80x25 16 boja, za INT 10,AH=0
         int     10h                         ; Ovde je za svaku sigurnost
         popa
-        ret
+        retf
 
 ; ------------------------------------------------------
 ; _hide_cursor -- Sakrij kursor
@@ -134,7 +134,7 @@ _hide_cursor:
         mov     al, 3                       ; Ovo znaci 80x25 16 boja, za INT 10,AH=0
         int     10h                         ; Ovde je za svaku sigurnost
         popa
-        ret  
+        retf
     
 ; ----------------------------------------------------------
 ; _print_newline -- Postavlja kursor na pocetak novog reda
@@ -149,7 +149,7 @@ _print_newline:
         mov     al, 10                      ; Novi red (LF)
         int     10h
         popa
-        ret
+        retf
 
 ; ------------------------------------------------------------------
 ; _dump_registers -- Ispisuje sadrzaj registara u hex formatu
@@ -158,7 +158,7 @@ _print_newline:
 
 _dump_registers:
         pusha
-        call    _print_newline
+        call    sys:_print_newline
         push    di
         push    si
         push    dx
@@ -166,37 +166,37 @@ _dump_registers:
         push    bx
         
         mov     si, .ax_string
-        call    _print_string
-        call    _print_4hex
+        call    sys:_print_string
+        call    sys:_print_4hex
 	
         pop     ax
         mov     si, .bx_string
-        call    _print_string
-        call    _print_4hex
+        call    sys:_print_string
+        call    sys:_print_4hex
 
         pop     ax
         mov     si, .cx_string
-        call    _print_string
-        call    _print_4hex
+        call    sys:_print_string
+        call    sys:_print_4hex
 
         pop     ax
         mov     si, .dx_string
-        call    _print_string
-        call    _print_4hex
+        call    sys:_print_string
+        call    sys:_print_4hex
 
         pop     ax
         mov     si, .si_string
-        call    _print_string
-        call    _print_4hex
+        call    sys:_print_string
+        call    sys:_print_4hex
 
         pop     ax
         mov     si, .di_string
-        call    _print_string
-        call    _print_4hex
+        call    sys:_print_string
+        call    sys:_print_4hex
 
-        call    _print_newline
+        call    sys:_print_newline
         popa
-        ret
+        retf
 
        .ax_string     db ' AX:', 0
        .bx_string     db ' BX:', 0
@@ -216,7 +216,7 @@ _print_space:
         mov     al, 20h                     ; ASCII kod za Space
         int     10h
         popa
-        ret
+        retf
 
 ; ------------------------------------------------------------------
 ; _dump_string -- Ispisuje string kao niz hex bajtova i znakova
@@ -233,22 +233,22 @@ _dump_string:
         lodsb
         cmp     al, 0
         je     .StampajZnak
-        call    _print_2hex
-        call    _print_space                ; Prazno mesto izmedju bajtova
+        call    sys:_print_2hex
+        call    sys:_print_space                ; Prazno mesto izmedju bajtova
         inc     cx
         cmp     cx, 8                       ; Da li je sredina (od 16 bajtova)?
         jne    .SledecaLinija
-        call    _print_space                ; Sredina linije, dvostruko prazno mesto
+        call    sys:_print_space                ; Sredina linije, dvostruko prazno mesto
         jmp    .JosHexa
 .SledecaLinija:
         cmp     cx, 16
         jne    .JosHexa
 .StampajZnak:
-        call    _print_space
+        call    sys:_print_space
         mov     ah, 0Eh                     ; BIOS TTY
         mov     al, '|'                     ; Delimiter izmedju hex ispisa i ASCII znakova
         int     10h
-        call    _print_space
+        call    sys:_print_space
         mov     si, di                      ; Idi na pocetak ove linije
         mov     cx, 0
 .JosZnakova:
@@ -269,12 +269,12 @@ _dump_string:
         inc     cx
         cmp     cx, 16                      ; U jednoj liniji ispisuje se 16 bajtova
         jl     .JosZnakova
-        call    _print_newline              ; Sledeca linija
+        call    sys:_print_newline              ; Sledeca linija
         jmp    .Linija
 .Kraj:
-        call    _print_newline        
+        call    sys:_print_newline        
         popa
-        ret
+        retf
 
 ; --------------------------------------------------------------
 ; _print_digit -- Ispisuje sadrzaj AX kao cifru 
@@ -292,7 +292,7 @@ _print_digit:
         mov     ah, 0Eh			
         int     10h
         popa
-        ret
+        retf
 
 ; -------------------------------------------------------
 ; _print_1hex -- Ispisuje donji nibl AL u hex formatu
@@ -302,9 +302,9 @@ _print_digit:
 _print_1hex:
         pusha
         and     ax, 0Fh                     ; Maska za donji nibl
-        call    _print_digit
+        call    sys:_print_digit
         popa
-        ret
+        retf
 
 ; -------------------------------------------------------
 ; _print_2hex -- Ispisuje AL u hex formatu
@@ -315,11 +315,11 @@ _print_2hex:
         pusha
         push    ax                          ; Gornji nibl prebaciti u donji
         shr     ax, 4
-        call    _print_1hex                 ; Ispisati gornji nibl
+        call    sys:_print_1hex                 ; Ispisati gornji nibl
         pop     ax
-        call    _print_1hex                 ; Ispisati donji nibl
+        call    sys:_print_1hex                 ; Ispisati donji nibl
         popa
-        ret
+        retf
 
 ; -------------------------------------------------------
 ; _print_4hex -- Ispisuje AX u hex formatu
@@ -330,11 +330,11 @@ _print_4hex:
         pusha
         push    ax                          ; Ispisati gornji bajt
         mov     al, ah
-        call    _print_2hex
+        call    sys:_print_2hex
         pop     ax                          ; Ispisati donji bajt
-        call    _print_2hex
+        call    sys:_print_2hex
         popa
-        ret
+        retf
 
 ; -------------------------------------------------------
 ; _print_dec -- Ispisuje AX u dekadnom formatu
@@ -354,10 +354,10 @@ _print_dec:
         jg .petlja
     .petlja2:
         pop ax
-        call _print_digit
+        call sys:_print_digit
         loop .petlja2
         popa
-        ret
+        retf
 
 ; --------------------------------------------------------------------
 ; _input_string -- Ucitava string sa tastature
@@ -370,7 +370,7 @@ _input_string:
         mov     di, ax                      ; DI pokazuje na bafer (lokaciju gde se smesta string)
         mov     cx, 0                       ; Backspace brojac
 .ImaJos:                                      
-        call    _wait_for_key
+        call    sys:_wait_for_key
         cmp     al, 13                      ; Zavrsi unosenje ako je pritisnut Enter
         je     .Kraj
         cmp     al, 8                       ; Pritisnut Backspace?
@@ -384,7 +384,7 @@ _input_string:
 .BackSpace:
         cmp     cx, 0                       ; Backspace na pocetku stringa?
         je     .ImaJos                      ; Ako jeste, ignorisi
-        call    _get_cursor_pos             ; Backspace na pocetku ekranske linije?
+        call    sys:_get_cursor_pos             ; Backspace na pocetku ekranske linije?
         cmp     dl, 0
         je     .BkSpPocetakLinije
         pusha
@@ -403,13 +403,13 @@ _input_string:
 .BkSpPocetakLinije:
         dec     dh                          ; Skoci na kraj prethodne linije
         mov     dl, 79
-        call    _move_cursor
+        call    sys:_move_cursor
         mov     al, ' '                     ; Ispisi Space
         mov     ah, 0Eh
         int     10h
 
         mov     dl, 79                      ; Pomeri se unazad pre Space
-        call    _move_cursor
+        call    sys:_move_cursor
         dec     di                          ; Pomeri unazad pointer stringa
         dec     cx                          ; Pomeri unazad brojac
         jmp    .ImaJos
@@ -430,7 +430,7 @@ _input_string:
         mov     ax, 0                       ; Zavrsetak stringa
         stosb
         popa
-        ret
+        retf
 
 ; --------------------------------------------------------------------------------
 ; _draw_block -- Crta blok u zadatoj boji (boja se nalazi u BL)
@@ -443,7 +443,7 @@ _input_string:
 _draw_block:          
         pusha
 .ImaJos:
-        call    _move_cursor                ; Postavljamo se na pocetak crtanja bloka
+        call    sys:_move_cursor                ; Postavljamo se na pocetak crtanja bloka
         mov     ah, 09h                     ; Crtamo blok pomocu praznom mesta odredjene boje
         mov     bh, 0
         mov     cx, si
@@ -455,7 +455,7 @@ _draw_block:
         cmp     ax, di                      ; Da li smo stigli do krajnje tacke (DI)?
         jne    .ImaJos                      ; Ako nismo, nastavljamo crtanje
         popa
-        ret
+        retf
 
 ; -------------------------------------------------------------------
 ; _draw_background -- Brise ekran i iscrtava gore i dole bele trake,
@@ -472,7 +472,7 @@ _draw_background:
         push    cx
         mov     dl, 0                       ; Postavljamo kursor u gornji levi ugao
         mov     dh, 0
-        call    _move_cursor
+        call    sys:_move_cursor
 
         mov     ah, 09h                     ; Iscrtavamo gornju traku
         mov     bh, 0
@@ -483,7 +483,7 @@ _draw_background:
 
         mov     dh, 1                       ; Postavljamo kursor na pocetak drugog reda
         mov     dl, 0
-        call    _move_cursor
+        call    sys:_move_cursor
 
         mov     ah, 09h                     ; Iscrtavamo obojenu radnu povrsinu
         mov     cx, 1840                    ; 23 linija x 80 kolona 
@@ -494,7 +494,7 @@ _draw_background:
 
         mov     dh, 24                      ; Postavljamo kursor na pocetak poslednjeg reda
         mov     dl, 0
-        call    _move_cursor
+        call    sys:_move_cursor
 
         mov     ah, 09h                     ; Iscrtavamo donju traku
         mov     bh, 0
@@ -505,24 +505,24 @@ _draw_background:
 
         mov     dh, 24                      ; Postavljamo kursor na prvu poziciju u donjoj traci
         mov     dl, 1
-        call    _move_cursor
+        call    sys:_move_cursor
         pop     bx                          ; Ispisujemo donji string
         mov     si, bx
-        call    _print_string
+        call    sys:_print_string
 
         mov     dh, 0                       ; Postavljamo kursor na prvu poziciju u gornjoj traci
         mov     dl, 1
-        call    _move_cursor
+        call    sys:_move_cursor
         pop     ax                          ; Ispisujemo gornji string
         mov     si, ax
-        call    _print_string
+        call    sys:_print_string
 
         mov     dh, 1                       ; Postavljamo kursor na prvu poziciju radne povrsine
         mov     dl, 0
-        call    _move_cursor
+        call    sys:_move_cursor
 
         popa
-        ret
+        retf
 
 ; ------------------------------------------------------------------
 ; _dialog_box -- Iscrtava dialog boks sa dugmetom 'OK'
@@ -535,11 +535,11 @@ _draw_background:
  
 _dialog_box:
         pusha
-        call    _hide_cursor
+        call    sys:_hide_cursor
         mov     dh, 9                       ; Iscrtavamo pozadinu dialog boksa 
         mov     dl, 19                      ; Gornji levi ugao je 9-ta linija 19-ta kolona 
 .CrtajBoks:
-        call    _move_cursor
+        call    sys:_move_cursor
         pusha
         mov     ah, 09h
         mov     bh, 0
@@ -558,27 +558,27 @@ _dialog_box:
         je     .NijePrvi                    ; Ucitati string za prvi red dialog boksa
         mov     dl, 20
         mov     dh, 10                      ; Postaviti kursor na pocetak prvog reda dialog boksa
-        call    _move_cursor
+        call    sys:_move_cursor
         mov     si, ax                      ; Ispisati prvi string
-        call    _print_string
+        call    sys:_print_string
 
 .NijePrvi:
         cmp     bx, 0                       ; Preskoci ako je parametar nula
         je     .NijeDrugi                   ; Ucitati string za drugi red dialog boksa
         mov     dl, 20
         mov     dh, 11                      ; Postaviti kursor na pocetak drugog reda dialog boksa
-        call    _move_cursor
+        call    sys:_move_cursor
         mov     si, bx                      ; Ispisati drugi string	
-        call    _print_string
+        call    sys:_print_string
 
 .NijeDrugi:
         cmp     cx, 0                       ; Preskoci ako je parametar nula
         je     .NijeTreci                   ; Ucitati string za treci red dialog boksa
         mov     dl, 20
         mov     dh, 12                      ; Postaviti kursor na pocetak treceg reda dialog boksa
-        call    _move_cursor
+        call    sys:_move_cursor
         mov     si, cx                      ; Ispisati treci string	
-        call    _print_string
+        call    sys:_print_string
 
 .NijeTreci:
         mov     bl, CRNO_NA_BELOM_S         ; Sjajna bela boja pozadine, crna slova 
@@ -586,18 +586,18 @@ _dialog_box:
         mov     dl, 35                      ; i na sredini  dalog boksa
         mov     si, 8                       ; dimenzije 8x1 znakova
         mov     di, 15
-        call    _draw_block
+        call    sys:_draw_block
         mov     dl, 38                      ; Ispisuje OK na sredini dugmeta
         mov     dh, 14
-        call    _move_cursor
+        call    sys:_move_cursor
         mov     si, .ok_string
-        call    _print_string
-        call    _wait_for_key               ; Cekaj da korisnik pritisne taster Enter
+        call    sys:_print_string
+        call    sys:_wait_for_key               ; Cekaj da korisnik pritisne taster Enter
         cmp     al, 13			
         jne    .NijeTreci
-        call    _show_cursor
+        call    sys:_show_cursor
         popa
-        ret
+        retf
 
        .ok_string    db 'OK', 0
 

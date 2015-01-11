@@ -17,6 +17,6 @@ _run_batch:
     
     mov     si, .BatPozdrav
     call    _print_string
-    ret
+    retf
     
  .BatPozdrav   db 'Batch interpreter V.0.0.1',10,13,0   

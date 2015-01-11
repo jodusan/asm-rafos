@@ -33,14 +33,14 @@ _print_file:
 		mov		byte [ImeDatoteke+4], dl
 		mov		ax, ImeDatoteke		
 		pusha								; Cuvamo registre jer _file_exists menja AX i mozda jos nesto :(
-		call	_file_exists				; Brisemo ako datoteka sa takvim imenom postoji
+		call	sys:_file_exists			; Brisemo ako datoteka sa takvim imenom postoji
 		popa
 		jc		.Snimi
 		pusha								; cuvamo registre jer ih ni _remove_file ne cuva :(
-		call	_remove_file
+		call	sys:_remove_file
 		popa				
 .Snimi
-		call	_write_file					; Cuvamo temp datoteku na disku
+		call	sys:_write_file					; Cuvamo temp datoteku na disku
 		mov		cx, 0						; Dodajemo ime datoteke u queue
 		mov		si, ImeDatoteke
 		mov		di, Queue					; Racunamo poziciju u queue na koju dodajemo
@@ -59,13 +59,13 @@ _print_file:
 		jne 	.DodajUQueue
 		popa
 		clc
-		ret
+		retf
 			
 .NemaMesta
 		dec		byte [QueueBrojac]	
 		popa
 		stc
-		ret
+		retf
 		
 ; ------------------------------------------------------------------------
 ; printer (u okviru prekidne rutine) ucitava datoteku iz reda i stampa ga
@@ -134,7 +134,7 @@ printer:
 		mov		bl, 0Ch						; Na kraju stampamo form feed
 		call	.pr_char
 		mov		ax, ImeStampa				; Brisemo temp datoteku iz memorije	
-		call 	_remove_file
+		call 	sys:_remove_file
 		dec		byte [QueueBrojac]			
 		cmp		byte [TrenQueue], MAX_QUE	; Da li smo stampali peti u redu?
 		jne		.izadji						; Ako nismo, samo povecamo pokazivac u redu
@@ -147,7 +147,7 @@ printer:
 		pop		ds							; Vracamo stari DS
         popa
 		popf
-        ret          
+        ret        
 
 ; -----------------------------------
 ; pr_char stampa znak u bl
@@ -248,9 +248,9 @@ printer:
         jnz    .SledecaStavka          
         mov byte [di+11], 0                 ; Zavrsna nula u imenu datoteke
         mov     ax, di                      ; Konvetujemo sva slova u velika slova
-        call    _string_uppercase
+        call    sys:_string_uppercase
         mov     si, [.filename]             ; DS:SI = mesto gde se vrsi ucitavanje
-        call    _string_compare             ; Da li odgovara nekoj od postojecih stavki?
+        call    sys:_string_compare             ; Da li odgovara nekoj od postojecih stavki?
         jc     .NasaoDatoteku
         loop   .SledecaStavka
 

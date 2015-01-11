@@ -84,7 +84,7 @@ _ubaci_proces:
 	cmp cx, 29
 	jl .petlja
 	mov si, sch_no_memory_error
-	call _print_string
+	call sys:_print_string
 	stc
 	pop ax
 	popa 								; postavimo CF jer nismo nasli slobodnu memoriju
@@ -104,7 +104,7 @@ _ubaci_proces:
 
 	push ax 							; ubacimo ime na stack 
 
-	call _load_file_current_folder		; ucitamo program u memoriju
+	call _load_file_current_folder	; ucitamo program u memoriju
 
 	pop ax 								; na ax vratimo ime
 	pop cx 								; na cx vratimo pid
@@ -115,7 +115,7 @@ _ubaci_proces:
 	mov bx, cx
 	shl bx, 5 							; pid * 32
 	add di, bx
-	call _string_copy
+	call sys:_string_copy
 
 	pop ax 								; na ax vratimo velicinu
 	call _update_scheduler
@@ -323,9 +323,9 @@ _kill_pid:
 _print_pids:
 	pusha
 
-	call _print_newline
+	call sys:_print_newline
 	mov si, sch_pids_string_start
-	call _print_string
+	call sys:_print_string
 
 	mov si, sch_queue
 	xor ch, ch
@@ -343,18 +343,18 @@ _print_pids:
 
 	cmp ax, 10
 	jge .print 
-	call _print_space
+	call sys:_print_space
 .print:
 	call _print_dec						; odstampamo pid
 
-	call _print_space
+	call sys:_print_space
 
 	mov si, sch_names
 	shl ax, 5 							; pid * 32
 	add si, ax
-	call _print_string 					; odstampamo ime
+	call sys:_print_string 					; odstampamo ime
 
-	call _print_newline
+	call sys:_print_newline
 
 .sledeci:
 	pop si
@@ -363,7 +363,7 @@ _print_pids:
 	loop .petlja
 	
 	mov si, sch_pids_string_end
-	call _print_string
+	call sys:_print_string
 
 	popa
 	ret
@@ -399,106 +399,106 @@ _dbg_string_end 	db '---- DEBUG INFO END -----', 13, 10, 0
 
 _dbg_dump:
 	pusha
-	call _print_newline
+	call sys:_print_newline
 	mov si, _dbg_string_start
-	call _print_string
+	call sys:_print_string
 	
 	; active process string: value
 	mov si, _dbg_active_proc
-	call _print_string
+	call sys:_print_string
 	xor ax,ax
 	mov  al, byte [sch_active_proc]
-	call _print_digit
-	call _print_newline
+	call sys:_print_digit
+	call sys:_print_newline
 
 	; sizes content petlj
 	mov si, _dbg_sizes_content
-	call _print_string
+	call sys:_print_string
 	mov cx, 32
 	mov si, sch_sizes
 
 	.dbg_petlja2:
 	mov al, byte [si]
-	call _print_2hex
+	call sys:_print_2hex
 	inc si
 	loop .dbg_petlja2
 
-	call _print_newline
+	call sys:_print_newline
 
 	; queue content petlj
 	mov si, _dbg_queue_content
-	call _print_string
+	call sys:_print_string
 	xor ch, ch
 	mov cl, byte [sch_queue_size]
 	mov si, sch_queue
 
 	.dbg_petlja:
 	mov al, byte [si]
-	call _print_2hex
+	call sys:_print_2hex
 	inc si
 	loop .dbg_petlja
 
 	;mov al, byte[sch_queue + 1]
 	;call _print_2hex
 
-	call _print_newline	
+	call sys:_print_newline	
 
 	; queue size sring: value
 	mov si, _dbg_queue_size
-	call _print_string
+	call sys:_print_string
 	xor ax, ax
 	mov al, byte [sch_queue_size]
-	call _print_digit
-	call _print_newline
+	call sys:_print_digit
+	call sys:_print_newline
 
 	; mmt string: value (u hexu) - littleendian-bigendian 
 	mov si, _dbg_mmt_hex
-	call _print_string
+	call sys:_print_string
 	mov cx, 32
 	mov si, sch_mmt
 
 	.dbg_petlja3:
 	mov al, byte [si]
-	call _print_2hex
+	call sys:_print_2hex
 	inc si
 	loop .dbg_petlja3
 
-	call _print_newline	
+	call sys:_print_newline	
 
 	mov si, _dbg_string_end
-	call _print_string
-	call _print_newline
+	call sys:_print_string
+	call sys:_print_newline
 	popa
 	ret
 
 _dbg_dump_stacks:
 	pusha
 
-	call _print_newline
+	call sys:_print_newline
 
 	mov si, _dbg_string_start
-	call _print_string
+	call sys:_print_string
 
 	mov si, _dbg_stacks
-	call _print_string
+	call sys:_print_string
 
 	mov si, sch_stacks
 	xor ch, ch
 	mov cl, byte [sch_queue_size]
 .petlja:
 	mov ax, word [si]
-	call _print_4hex
-	call _print_space
+	call sys:_print_4hex
+	call sys:_print_space
 	inc si
 	inc si
 	loop .petlja 
 
-	call _print_newline	
+	call sys:_print_newline	
 
 	mov si, _dbg_string_end
-	call _print_string
+	call sys:_print_string
 
-	call _print_newline	
+	call sys:_print_newline	
 
 	popa
 	ret

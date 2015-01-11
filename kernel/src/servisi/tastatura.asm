@@ -23,7 +23,7 @@ _wait_for_key:
         mov     [.tmp_buf], ax              ; Sacuvati rezultat
         popa                                ; Vratiti sve registre
         mov     ax, [.tmp_buf]              ; Vratiti rezultat preko AX
-        ret
+        retf
 
        .tmp_buf dw 0
 
@@ -44,12 +44,12 @@ _check_for_key:
         mov     [.tmp_buf], ax              ; Sacuvati rezultat
         popa				         
         mov     ax, [.tmp_buf]              ; Vratiti rezultat preko AX
-        ret
+        retf
         
 .NijePritisnut:
         popa
         mov     al, 0                       ; Nula, ako taster nije pritisnut
-        ret
+        retf
 
        .tmp_buf dw 0
 

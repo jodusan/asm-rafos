@@ -28,7 +28,7 @@ _string_length:
         mov word [.TmpBrojac], cx           ; Privremeno sacuvati broj bajtova
         popa                                ; jer vacamo sve registre sa steka (tj. menjamo AX).
         mov     ax, [.TmpBrojac]            ; Vracamo broj bajtova (duzinu stringa) u AX.
-        ret
+        retf
 
        .TmpBrojac    dw 0
 
@@ -43,7 +43,7 @@ _string_reverse:
         cmp byte [si], 0                    ; Ne pokusavati invertovanje praznog stringa
         je     .Izlaz
         mov     ax, si
-        call    _string_length
+        call    sys:_string_length
         mov     di, si
         add     di, ax
         dec     di                          ; DI pokazuje na poslednji (nenulti) znak u stringu 
@@ -58,7 +58,7 @@ _string_reverse:
         ja     .Sledeci                     ; prosla sredinu stringa? (JA = Jump if Above)
 .Izlaz:
         popa
-        ret
+        retf
 
 ; ------------------------------------------------------------------
 ; _find_char_in_string -- Pronadji znak u stringu
@@ -85,7 +85,7 @@ _find_char_in_string:
 .NismoNasli:
         popa
         mov     ax, 0                       ; Nismo pronasli znak
-        ret
+        retf
 
        .tmp     dw 0
 
@@ -109,7 +109,7 @@ _string_charchange:
         jmp    .Sledeci
 .Izlaz:
         popa
-        ret
+        retf
 
 ; -------------------------------------------------------------------
 ; _string_uppercase -- Konverzija ASCII stringa u velika slova
@@ -135,7 +135,7 @@ _string_uppercase:
         jmp    .Dalje
 .Kraj:
         popa
-        ret
+        retf
 
 ; ------------------------------------------------------------------
 ; _string_lowercase -- Konverzija ASCII stringa u mala slova
@@ -161,7 +161,7 @@ _string_lowercase:
         jmp    .Dalje
 .Kraj:
         popa
-        ret
+        retf
 
 ; --------------------------------------------------------------------
 ; _string_copy -- Kopiranje jednog stringa u drugi
@@ -178,7 +178,7 @@ _string_copy:
         cmp byte al, 0                      ; Ako je izvorni string prazan, kraj
         jne    .Dalje
         popa
-        ret
+        retf
 
 
 ; -----------------------------------------------------------------------
@@ -191,7 +191,7 @@ _string_truncate:
         add     si, ax
         mov byte [si], 0
         popa
-        ret
+        retf
 
 ; -------------------------------------------------------------------
 ; _string_join -- Spajanje dva stringa u treci string
@@ -202,14 +202,14 @@ _string_join:
         pusha
         mov     si, ax                      ; Kopiramo prvi string na lokaciju odredisnog
         mov     di, cx
-        call    _string_copy
-        call    _string_length              ; Duzina prvog stringa
+        call    sys:_string_copy
+        call    sys:_string_length              ; Duzina prvog stringa
         add     cx, ax                      ; Postavljamo pointer na zavrsni bajt (0)  
         mov     si, bx                      ; odredisnog stringa 
         mov     di, cx
-        call    _string_copy                ; Kopiramo drugi string od tog mesta
+        call    sys:_string_copy                ; Kopiramo drugi string od tog mesta
         popa
-        ret
+        retf
 
 ; ---------------------------------------------------------------------   
 ; _string_chomp -- Odsecanje pocetnih i krajnjih 'Space' znakova
@@ -243,7 +243,7 @@ _string_chomp:
         jmp    .KopirajDalje
 .KrajKopiranja:
         mov     ax, dx                      ; AX = originalni pocetak stringa
-        call    _string_length         
+        call    sys:_string_length         
         cmp     ax, 0                       ; Ukoliko je njegova duzna = 0, kraj
         je     .Kraj
         mov     si, dx
@@ -256,7 +256,7 @@ _string_chomp:
         jmp    .Dalje                       ; (prva nula oznacava kraj stringa, ostale se ne koriste)
 .Kraj:
         popa
-        ret
+        retf
 
 ; ---------------------------------------------------------------------------
 ; _string_strip -- Uklanja zadati znak iz stringa maksimalne duzine 255
@@ -280,7 +280,7 @@ _string_strip:
         jmp    .SledeciZnak                 ; u sledecem prolazu prepisujemo preko tog znaka
 .Izlaz:
         popa
-        ret
+        retf
 
 ; ------------------------------------------------------------------
 ; _string_compare -- Poredi dva stringa
@@ -307,7 +307,7 @@ _string_compare:
 .Zavrsen:                                   ; Kraj i jednog i drugog stringa
         popa
         stc                                 ; CF = 1
-        ret
+        retf
 
 ; -------------------------------------------------------------------------
 ; _string_strincmp -- Poredi prvih n znakova zadatih stringova
@@ -337,7 +337,7 @@ _string_strincmp:
 .Zavrsen:                                   ; Kraj i jednog i drugog stringa
         popa
         stc                                 ; CF =1 
-        ret
+        retf
 
 ; ----------------------------------------------------------------------
 ; _string_parse -- Parsira string koji sadrzi prazna mesta
@@ -388,7 +388,7 @@ _string_parse:
 .Izlaz:
         pop     ax
         pop     si
-        ret
+        retf
         
 ; ------------------------------------------------------------------
 ; _string_to_int -- Konvertuje decimalni string u int
@@ -398,7 +398,7 @@ _string_parse:
 _string_to_int:
         pusha
         mov     ax, si                      ; Duzina stringa
-        call    _string_length
+        call    sys:_string_length
         add     si, ax                      ; Pocinjemo od znaka sa krajnje desne strane
         dec     si
         mov     cx, ax                      ; Duzina stringa se koristi kao brojac znakova
@@ -429,7 +429,7 @@ _string_to_int:
         mov word [.tmp], bx                 ; Privremeno cuvamo dobijeni int zbog 'popa'
         popa
         mov word ax, [.tmp]
-        ret
+        retf
 
        .multiplikator   dw 0  
        .tmp             dw 0
@@ -462,7 +462,7 @@ _int_to_string:
         mov byte [di], 0                    ; Oznacavamo kraj stringa
         popa
         mov     ax, .t                      ; Vracamo u AX pocetak strnga 
-        ret
+        retf
 
        .t times 7 db 0
 
@@ -501,7 +501,7 @@ _sint_to_string:
         mov byte [di], 0                    ; Oznacavamo kraj stringa
         popa
         mov     ax, .t                      ; Vracamo u AX pocetak strnga
-        ret
+        retf
 
        .t times 7 db 0
 
@@ -558,7 +558,7 @@ _long_int_to_string:
         jnz    .Konverzija
 .Kraj:
         popa
-        ret  
+        retf
  
 ; -----------------------------------------------------------------------
 ; _get_time_string -- Tekuce vreme u obliku stringa (npr. '10:25:07')
@@ -603,7 +603,7 @@ _get_time_string:
         mov     al, 0                       ; Kraj stringa
         stosb
         popa
-        ret
+        retf
 
 ; -----------------------------------------------------------------------
 ; _get_date_string -- Tekuci datum u obliku stringa (npr. '15.8.2010')
@@ -638,7 +638,7 @@ _get_date_string:
         mov     ax, 0                       ; Kraj stringa
         stosw
         popa
-        ret
+        retf
 
 .Dodaj2Cifre:
         mov     al, ah                      ; Konvertuje AH u dve ASCII cifre

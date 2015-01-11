@@ -17,7 +17,7 @@
 
 _get_api_version:
         mov     al, RAF_OS_API_VER
-        ret
+        retf
 
 ; ------------------------------------------------------------------
 ; _pause -- Cekanje odredjeno vreme
@@ -35,7 +35,7 @@ _pause:
         dec     bx
         jne    .Cekaj
         popa
-        ret
+        retf
 
 ; -------------------------------------------------------------------
 ; _fatal_error -- Ispisi poruku o fatalnoj gresci i zaustavi sistem
@@ -46,7 +46,7 @@ _fatal_error:
         mov     bx, ax                      ; Sacuvati privremeno adresu poruke
         mov     dh, 0
         mov     dl, 0
-        call    _move_cursor
+        call    sys:_move_cursor
         pusha
         mov     ah, 09h                     ; Nacrtati crvenu traku na vrhu
         mov     bh, 0
@@ -58,12 +58,12 @@ _fatal_error:
 
         mov     dh, 0
         mov     dl, 0
-        call    _move_cursor
+        call    sys:_move_cursor
 
         mov     si, .FatalnaGreska          ; Ispisi poruku o grsci
-        call    _print_string
+        call    sys:_print_string
         mov     si, bx                      ; Objasnjenje greske koje prosledjuje program
-        call    _print_string
+        call    sys:_print_string
         cli                                 ; Zaustaviti rad procesora
         hlt
 	

@@ -31,7 +31,7 @@ _seed_random:
         mov word [RandomSeed], bx           ; gde su mm minuti, a ss sekundi protekli od punog sata
         pop     ax
         pop     bx
-        ret
+        retf
 
         RandomSeed dw 0
 
@@ -55,7 +55,7 @@ _get_random:
         pop     bx
         pop     dx
         add     cx, ax                      ; Vratiti donji ofset
-        ret
+        retf
 
 .GenerisiBroj:
         push    dx
@@ -66,7 +66,7 @@ _get_random:
         mov     [RandomSeed], ax
         pop     bx
         pop     dx
-        ret
+        retf
 
 ; ------------------------------------------------------------------
 ; _bcd_to_int -- Konverzija BCD u celobrojnu vrednost
@@ -86,7 +86,7 @@ _bcd_to_int:
         mov     [.tmp], ax
         popa
         mov     ax, [.tmp]                  ; Vrati rezultat preko AX
-        ret
+        retf
 
        .tmp     dw 0
 
@@ -100,6 +100,6 @@ _long_int_negate:
         neg     ax
         adc     dx, 0
         neg     dx
-        ret
+        retf
 
 

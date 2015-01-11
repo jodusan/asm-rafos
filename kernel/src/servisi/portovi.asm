@@ -18,7 +18,7 @@ _port_byte_out:
         pusha
         out     dx, al
         popa
-        ret
+        retf
 
 ; ------------------------------------------------------------------
 ; _port_byte_in -- Ucitati bajt sa porta
@@ -32,7 +32,7 @@ _port_byte_in:
         mov word [.tmp], ax
         popa
         mov     ax, [.tmp]
-        ret
+        retf
 
        .tmp     dw 0
 
@@ -56,7 +56,7 @@ _serial_port_enable:
 .Kraj:
         int     14h
         popa
-        ret
+        retf
 
 ; ------------------------------------------------------------------
 ; _send_via_serial -- Posalji bajt preko serijskg porta
@@ -72,7 +72,7 @@ _send_via_serial:
         mov     [.tmp], ax
         popa
         mov     ax, [.tmp]
-        ret
+        retf
 
        .tmp     dw 0
 
@@ -89,6 +89,6 @@ _get_via_serial:
         mov     [.tmp], ax
         popa
         mov     ax, [.tmp]
-        ret
+        retf
 
        .tmp     dw 0

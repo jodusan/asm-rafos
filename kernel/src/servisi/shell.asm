@@ -42,43 +42,43 @@ input       equ  app_start - 256            ; Deljeni bafer za OS i aplikacije
 arg1        equ  app_start - 128            ; Bafer za prvi argument komandne linije
 
 _command_line:
-    call    _clear_screen
+    call    sys:_clear_screen
     mov     ax, autoexec_string         ; Ucitavamo autoexec.bat
     mov     bx, 0                       ; 
     mov     cx, app_start               ; Adresa gde pocinje program                
-    call    _load_file                  ; CF = 1 ukoliko nema autoexec
+    call    sys:_load_file              ; CF = 1 ukoliko nema autoexec
     jc      Ispisi_verziju              ; Preskoci sledeci deo ako autoexec.bat ne postoji           
     mov     ax, app_start               ; Prosledjuemo interpreteru pocetak programa 
-    call    _run_batch                  ; Pokrecemo BATCH Intepreter
+    call    sys:_run_batch              ; Pokrecemo BATCH Intepreter
 
 Ispisi_verziju:       
         mov     si, pozdrav
-        call    _print_string
+        call    sys:_print_string
         mov     si, verzija
-        call    _print_string
+        call    sys:_print_string
 
 Komanda:
         mov     si, prompt                  ; Glavna petlja. Prompt za unosenje komande.
-        call    _print_string
+        call    sys:_print_string
 
         mov     ax, input                   ; Ucitati komandni string
-        call    _input_string
-        call    _print_newline
+        call    sys:_input_string
+        call    sys:_print_newline
         mov     ax, input                   ; Ukloniti visak Space znakova
-        call    _string_chomp
+        call    sys:_string_chomp
 
         mov     si, input                   ; Ponovo prompt, ako je pritisnut samo Enter
         cmp     byte [si], 0
         je      Komanda
 
         mov     si, input                   ; Konvertovati sve u velika slova
-        call    _string_uppercase
+        call    sys:_string_uppercase
 		
 	push	si
 	push	di
 	mov	si, input
 	mov	di, temp_input
-	call	_string_copy
+	call	sys:_string_copy
 	pop 	di
 	pop	si
 
@@ -87,115 +87,115 @@ Komanda:
 ; -------------------------
         mov     si, input
         mov     di, exit_string             ; stop?
-        call    _string_compare
+        call    sys:_string_compare
         jc near exit
 
         mov     di, help_string             ; help?
-        call    _string_compare
+        call    sys:_string_compare
         jc near print_help
 
         mov     di, cls_string              ; cls?
-        call    _string_compare
+        call    sys:_string_compare
         jc near clear_screen
 
         mov     di, dir_string              ; dir?
 	mov	cl, 3
-        call    _string_strincmp
+        call    sys:_string_strincmp
         jc near list_directory
         
         mov     di, ls_string               ; Unix dir?
 	mov	cl, 2
-        call    _string_strincmp
+        call    sys:_string_strincmp
         jc near list_directory
 
         mov     di, ver_string              ; ver?
-        call    _string_compare
+        call    sys:_string_compare
         jc near print_ver
 
         mov     di, time_string             ; time?
-        call    _string_compare
+        call    sys:_string_compare
         jc near print_time
 
         mov     di, date_string             ; date?
-        call    _string_compare
+        call    sys:_string_compare
         jc near print_date
 
         mov     di, type_string             ; type?
         mov     cl, 3
-        call    _string_strincmp
+        call    sys:_string_strincmp
         jc near cat_file
 
         mov     di, cat_string              ; Unix type?
         mov     cl, 3
-        call    _string_strincmp
+        call    sys:_string_strincmp
         jc near cat_file
         
         mov     di, ren_string              ; rename?
         mov     cl, 3
-        call    _string_strincmp
+        call    sys:_string_strincmp
         jc near ren_file
  
         mov     di, del_string              ; delete?
         mov     cl, 3
-        call    _string_strincmp
+        call    sys:_string_strincmp
         jc near del_file
  
         mov     di, rm_string               ; Unix delete?
         mov     cl, 2
-        call    _string_strincmp
+        call    sys:_string_strincmp
         jc near del_file
  
         mov     di, copy_string             ; copy?
         mov     cl, 3
-        call    _string_strincmp
+        call    sys:_string_strincmp
         jc near copy_file
  
         mov     di, cp_string               ; Unix copy?
         mov     cl, 2
-        call    _string_strincmp
+        call    sys:_string_strincmp
         jc near copy_file
  
 	mov     di, attrib_string           ; attrib?
 	mov 	cl,6
-        call    _string_strincmp
+        call    sys:_string_strincmp
         jc near attributes
 
         mov     di, pids_string             ; pids?
         mov     cl, 4
-        call    _string_strincmp
+        call    sys:_string_strincmp
         jc near pids
 
         mov     di, kill_string             ; kill?
         mov     cl, 4
-        call    _string_strincmp
+        call    sys:_string_strincmp
         jc near kill
  
 	mov	di, md_string	            ; Make dir?
 	mov	cl, 2
-	call	_string_strincmp
+	call	sys:_string_strincmp
 	jc near make_dir
 		
 	mov	di, cd_string               ; Change dir?
 	mov	cl, 2
-	call	_string_strincmp
+	call	sys:_string_strincmp
 	jc near change_dir
 		
 	mov	di, rd_string		    ; Remove dir?
 	mov	cl, 2
-	call	_string_strincmp
+	call	sys:_string_strincmp
 	jc near remove_dir
 	
 	mov	di, a_string		    ; A:?
-	call	_string_compare
+	call	sys:_string_compare
 	jc near change_disc
 		
 	mov	di, b_string		    ; B:?
-	call	_string_compare
+	call	sys:_string_compare
 	jc near change_disc
 		
 	mov	di, path_string		    ; PATH?
 	mov	cl, 4
-	call	_string_strincmp
+	call	sys:_string_strincmp
 	jc near path
         
 ; --------------------------------------------------------------------------
@@ -206,12 +206,12 @@ Komanda:
 ProveriIzvrsnu:
 	mov	si, temp_input
         mov     di, input                   
-	call	_string_copy
+	call	sys:_string_copy
 	mov	si, input                   ; Resavamo problem prenosenja parametara sa komandne linije
-        call    _string_parse
+        call    sys:_string_parse
         mov     si, ax
         mov     di, arg0                    ; arg0 je komanda (ime eksternog programa) 
-        call    _string_copy
+        call    sys:_string_copy
 
         cmp     bx, 0
         jne     sa_argumentom
@@ -221,19 +221,19 @@ ProveriIzvrsnu:
 sa_argumentom:     
         mov     si, bx
         mov     di, arg1                    ; arg1 je prvi argument. Ako je NULL, onda nema prvog argumenta.        
-        call    _string_copy
+        call    sys:_string_copy
 
 bez_argumenta:   
         mov     si, arg0                    ; Da li zadata eksterna komada ima tacku u imenu datoteke?
         mov     al, '.'
-        call    _find_char_in_string
+        call    sys:_find_char_in_string
         cmp     ax, 0
         je      Sufiks
         jmp     PunoIme                     ; Ako ima tacku, proveravamo puno ime
 
 Sufiks: 
         mov     ax, arg0                    ; Ako nema tacku, dodajemo sufiks .BIN
-        call    _string_length
+        call    sys:_string_length
         mov     si, arg0                    ; AX sada sadrzi duzinu stringa       
         add     si, ax                      ; SI pokazuje na kraj stringa         
 
@@ -250,7 +250,7 @@ Sufiks:
 PunoIme:
         mov     si, arg0                    ; Korisnik pokusava da izvrsi kernel kao aplikaciju?
         mov     di, kern_string
-        call    _string_compare
+        call    sys:_string_compare
         jc near kern_warning
 
         mov     ax, arg0                    ; Ako ne, pokusavamo ucitavanje trazenog programa
@@ -263,13 +263,13 @@ PunoIme:
         mov word [Velicina], bx             ; Sacuvati velicinu ucitane datoteke (bajtova)
         mov     ax, arg0			         
         
-        call    _string_length                
+        call    sys:_string_length                
         mov     si, arg0
         add     si, ax
         sub     si, 3                       ; Postaviti se na pravo mesto za proveru ekstenzije datoteke 
 
         mov     di, BinEkstenzija           ; Da li je 'BIN'?
-        call    _string_compare
+        call    sys:_string_compare
         jnc     ComDatoteka               
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         mov     ax, arg0
@@ -305,13 +305,13 @@ PunoIme:
   
 ComDatoteka:
         mov     ax, input
-        call    _string_length
+        call    sys:_string_length
         mov     si, input
         add     si, ax
         sub     si, 3                       ; Provera ekstenzije 
 
         mov     di, ComEkstenzija           ; Da li je 'COM'
-        call    _string_compare
+        call    sys:_string_compare
         jnc     BatDatoteka                 
         
         pusha
@@ -337,18 +337,18 @@ ComDatoteka:
   
 BatDatoteka:
         mov     ax, input
-        call    _string_length
+        call    sys:_string_length
         mov     si, input
         add     si, ax
         sub     si, 3                       ; Provera ekstenzije 
 
         mov     di, BatEkstenzija           ; Da li je 'BAT'
-        call    _string_compare
+        call    sys:_string_compare
         jnc near ProveriPath                ; Ako nije, tada sistem ne moze da izvrsi program
 
         mov     ax, app_start               ; Ako jeste, pocetak programa 
         mov word bx, [Velicina]             ; i njegova velicina u memoriji 
-        call    _run_batch                  ; prosledjuju se skript interpreteru
+        call    sys:_run_batch              ; prosledjuju se skript interpreteru
 	mov		ax, (prompt+9)              ; Path pocetak
 	call	_change_folder_path
 	mov word [tempBrojac], 0
@@ -361,7 +361,7 @@ BatDatoteka:
         
 NijeBin:
         mov     ax, arg0
-        call    _string_length
+        call    sys:_string_length
         mov     si, arg0
         add     si, ax                      ; Idi na kraj ulaznog stringa                 
         sub     si, 4                       ; Treba oduzeti 4 znaka jer smo prethodno dodali .BIN 
@@ -401,7 +401,7 @@ NijeBin:
         
 NijeCom:
         mov     ax, arg0
-        call    _string_length
+        call    sys:_string_length
         mov     si, arg0
         add     si, ax                      ; Idi na kraj ulaznog stringa                 
         sub     si, 4                       ; Treba oduzeti 4 znaka jer smo prethodno dodali .BIN 
@@ -421,7 +421,7 @@ NijeCom:
 
         mov     ax, app_start               ; Adresa skript teksta
         mov word bx, [Velicina]             ; Velicina teksta
-        call    _run_batch                  ; Poziv interpretera
+        call    sys:_run_batch              ; Poziv interpretera
 		mov		ax, (prompt+9)              ; Path pocetak
 		call	_change_folder_path
 		mov word [tempBrojac], 0
@@ -483,7 +483,7 @@ ProveriPath:
 
 NijeKomanda:
         mov     si, NePostoji
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
 	
 ; -----------------------------------------------------------------
@@ -492,62 +492,62 @@ NijeKomanda:
 
 print_help:
         mov     si, HelpTekst
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
 
 ; ------------------------------------------------------------------
 
 clear_screen:
-        call    _clear_screen
+        call    sys:_clear_screen
         jmp     Komanda
 
 ; ------------------------------------------------------------------
 
 print_time:
         mov     bx, tmp_string
-        call    _get_time_string
+        call    sys:_get_time_string
         mov     si, bx
-        call    _print_string
-        call    _print_newline
+        call    sys:_print_string
+        call    sys:_print_newline
         jmp     Komanda
 
 ; ------------------------------------------------------------------
 
 print_date:
         mov     bx, tmp_string
-        call    _get_date_string
+        call    sys:_get_date_string
         mov     si, bx
-        call    _print_string
-        call    _print_newline
+        call    sys:_print_string
+        call    sys:_print_newline
         jmp     Komanda
 
 ; ------------------------------------------------------------------
 
 print_ver:
         mov     si, verzija
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
 
 ; -----------------------------------------------------------------
 
 list_directory:
 		mov 	si, input
-		call _string_parse
+		call    sys:_string_parse
 		
 		cmp		bx, 0
 		jne		.ImaPath
 		
         mov		si, .Naslov
-		call	_print_string
+		call	sys:_print_string
 		mov		si, (prompt + 9)			; Path pocetak
-		call	_print_string
+		call	sys:_print_string
 		mov		si, .CrLf
-		call	_print_string
+		call	sys:_print_string
 			
 		mov     bx, app_start               ; Bafer gde se smesta sadrzaj direktorijuma
-        call    _get_dir        
+        call    sys:_get_dir        
         mov     si, app_start               ; Ispisi sadrzaj bafera
-        call    _print_string	
+        call    sys:_print_string	
         jmp     Komanda
 		
 .ImaPath:
@@ -557,20 +557,20 @@ list_directory:
 		call	_get_dir_path
 		jc near .GreskaPutanje              
         mov    si, .Naslov
-		call	_print_string
+		call	sys:_print_string
  		pop		ax
-		call	_string_uppercase			
+		call	sys:_string_uppercase			
 		mov		si, ax
-		call	_print_string
+		call	sys:_print_string
 		mov		si, .CrLf
-		call	_print_string
+		call	sys:_print_string
 		mov     si, app_start               ; Ispisi sadrzaj bafera
-        call    _print_string
+        call    sys:_print_string
 		jmp 	Komanda
  
 .GreskaPutanje:
         mov     si, Err_WP
-        call    _print_string
+        call    sys:_print_string
 		jmp 	Komanda
  
         .Naslov db 13,10, ' Sadrzaj direktorijuma: ', 0
@@ -579,16 +579,16 @@ list_directory:
 
 attributes:
         mov     si, input
-        call    _string_parse
+        call    sys:_string_parse
         cmp     bx, 0
         je      .GreskaArgumenta
         cmp     cx, 0
         je      .GreskaArgumenta       
         mov     ax, bx
-        call    _file_exists
+        call    sys:_file_exists
         jc      .NePostoji
         mov     ax, cx
-        call    _string_length
+        call    sys:_string_length
         cmp     ax, 2
         jne     .GreskaArgumenta
         mov     ax, bx
@@ -598,12 +598,12 @@ attributes:
 
 .NePostoji:
         mov     si, DatNePostoji            ; Datoteka ne postoji
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda 
 		
 .GreskaArgumenta:
         mov     si, GreskaArgStr
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
 
 ; ------------------------------------------------------------------
@@ -616,16 +616,16 @@ pids:
 
 kill:
         mov     si, input
-        call    _string_parse
+        call    sys:_string_parse
         cmp     bx, 0
         jne     .ZadatPid
         mov     si, NemaPid
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
 
 .ZadatPid:
         mov     si, bx
-        call    _string_to_int
+        call    sys:_string_to_int
 
         cmp     ax, 0
         je      .LosPid
@@ -635,16 +635,16 @@ kill:
         call    _kill_pid
 
         mov     si, UspesnoUbijenSt
-        call    _print_string
+        call    sys:_print_string
         call    _print_dec
         mov     si, UspesnoUbijenEd
-        call    _print_string
+        call    sys:_print_string
 
         jmp     .Kraj
 
 .LosPid:
         mov     si, LosPid
-        call    _print_string
+        call    sys:_print_string
 
 .Kraj:
         jmp     Komanda
@@ -653,19 +653,19 @@ kill:
 
 cat_file:  
 	mov     si, input
-        call    _string_parse
+        call    sys:_string_parse
         cmp     bx, 0                       ; Da li je zadato i ime datoteke?
         jne     .ZadatoIme
         mov     si, NemaImena               ; Ako nije, ispisati poruku o gresci
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
 
 .ZadatoIme:
         mov     ax, bx
-        call    _file_exists                ; Da li postoji odredisna datoteka ?
+        call    sys:_file_exists                ; Da li postoji odredisna datoteka ?
         jc     .NePostoji
         mov cx, app_start                   ; Mozemo da ucitamo datoteku ovde, jer ne ucitavamo program
-        call    _load_file
+        call    sys:_load_file
         mov word [Velicina], bx
         cmp     bx, 0                       ; Datoteka prazna (nula bajtova)?
         je      Komanda                     ; Ako jeste, nemamo sta da ispisemo. 
@@ -676,9 +676,9 @@ cat_file:
         lodsb                               ; Uzmi bajt iz ucitane datoteke
         cmp     al, 0Ah                     ; Idi na pocetak novog reda ukoliko je ucitani bajt 0Ah (Unix text)
         jne    .NijeNoviRed                 ; Isto uraditi i ako je OAh, 0Dh (ovaj drugi se ignorise)
-        call    _get_cursor_pos
+        call    sys:_get_cursor_pos
         mov     dl, 0
-        call    _move_cursor
+        call    sys:_move_cursor
 .NijeNoviRed:
         int     10h                         ; Ispisi znak
 		dec     bx                          ; Racunaj velicinu datoteke
@@ -689,7 +689,7 @@ cat_file:
 		
 .NePostoji:
         mov     si, DatNePostoji
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
 			
 ; ------------------------------------------------------------------
@@ -728,110 +728,110 @@ provera:
 		
 del_file:
         mov     si, input
-        call    _string_parse
+        call    sys:_string_parse
         cmp     bx, 0                       ; Da li je zadato i ime datoteke?
         jne    .ZadatoIme
 
         mov     si, NemaImena               ; Ako nije, ispisati poruku o gresci
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
 
 .ZadatoIme:
         mov     ax, bx
-        call    _file_exists                ; Da li datoteka postoji?
+        call    sys:_file_exists                ; Da li datoteka postoji?
         jc     .NePostoji
-        call    _remove_file                ; Obrisi datoteku               
+        call    sys:_remove_file                ; Obrisi datoteku               
         jmp     Komanda 
     
 .NePostoji:
         mov     si, DatNePostoji            ; Datoteka ne postoji
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda    
     
 ; ------------------------------------------------------------------
 
 ren_file:
         mov     si, input
-        call    _string_parse
+        call    sys:_string_parse
         cmp     bx, 0                       ; Da je zadato ime datoteke?
         jne    .ZadatoIme
 
         mov     si, NemaImena               ; Ako nije, ispisati poruku o gresci
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
     
 .ZadatoIme:
         mov     ax, bx
-        call    _file_exists                ; Da li datoteka postoji?
+        call    sys:_file_exists                ; Da li datoteka postoji?
         jc     .NePostoji
 
         cmp     cx, 0                       ; Da li je zadato i ime odrdisne datoteke?
         jne    .Zadato2Ime
 
         mov     si, NemaImena2              ; Ako nije, ispisati poruku o gresci
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
     
 .Zadato2Ime:
         mov     ax, cx
-        call    _file_exists                ; Da li odredisna datoteka sa tim imenom vec postoji?
+        call    sys:_file_exists                ; Da li odredisna datoteka sa tim imenom vec postoji?
         jnc    .DuploIme    
     
         mov     ax, bx                      ; Pripremi parametre za kernel funkciju
         mov     bx, cx
-        call    _rename_file                ; Preimenuj datoteku
+        call    sys:_rename_file                ; Preimenuj datoteku
         jc near GreskaPisanja
         jmp     Komanda              
 
 .NePostoji:
         mov     si, DatNePostoji            ; Izvorna datoteka ne postoji
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda    
 
 .DuploIme:                                  ; Odredisna datoteka sa tim imenom vec postoji
         mov     si, VecPostoji
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda    
     
 ; --------------------------------------------------------------------
 
 copy_file:
         mov     si, input
-        call    _string_parse 
+        call    sys:_string_parse 
   
         mov     si, bx
         mov     di, .file1
-        call    _string_copy 
+        call    sys:_string_copy 
    
         mov     si, cx
         mov     di, .file2
-        call    _string_copy 
+        call    sys:_string_copy 
  
         cmp     bx, 0                       ; Da li je zadato i ime datoteke? 
         jne    .ZadatoIme
 
         mov     si, NemaImena               ; Ako nije, ispisati poruku o gresci
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
     
 .ZadatoIme:
         mov     ax, bx
-        call    _file_exists                ; Da li postoji izvorna datoteka?
+        call    sys:_file_exists                ; Da li postoji izvorna datoteka?
         jc     .NePostoji
         cmp     cx, 0                       ; Da li je zadato ime odredisne datoteke?
         jne    .Zadato2Ime
         mov     si, NemaImena2              ; Ako nije, ispisati poruku o gresci
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
     
 .Zadato2Ime:
         mov     ax, cx
-        call    _file_exists                ; Da li vec postoji datoteka sa tim imenom?
+        call    sys:_file_exists                ; Da li vec postoji datoteka sa tim imenom?
         jnc    .DuploIme    
  
         mov     ax, .file1
         mov     cx, app_start               ; Lokacija gde se ucitava datoteka
-        call    _load_file 
+        call    sys:_load_file 
     
         cmp     bx, app_start -1            ; Da li je datoteka veca od 32KB?
         jg     .SuviseVelika                ; To bi znacilo da ulazimo u memoriju rezervisanu za kernel.
@@ -840,23 +840,23 @@ copy_file:
         mov     bx, app_start               ; Lokacija pocetka bafera
 
         mov     ax, .file2  
-        call    _write_file                 ; Upisi u odredisnu datoteku
+        call    sys:_write_file                 ; Upisi u odredisnu datoteku
         jc near GreskaPisanja
         jmp     Komanda              
 
 .NePostoji:                                 ; Izvorna datoteka ne postoji
         mov     si, DatNePostoji
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda    
 
 .DuploIme:                                  ; Vec postoji odredisna datoteka sa zadatim imenom
         mov     si, VecPostoji
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda    
 
 .SuviseVelika:                              ; Datoteka veca od 3KB
         mov     si, DatPrevelika
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda 
  
    .file1    times 12 db 0
@@ -865,12 +865,12 @@ copy_file:
 ; ------------------------------------------------------------------
 make_dir:
 		mov 	si, input
-		call    _string_parse
+		call    sys:_string_parse
 		cmp		bx, 0
 		jne		.ImaIme
 		
 		mov     si, NemaImena1               ; Ako nema, ispisati poruku o gresci
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
 		
 .ImaIme:
@@ -880,11 +880,11 @@ make_dir:
 ; ------------------------------------------------------------------		
 change_dir:
 		mov 	si, input
-		call    _string_parse
+		call    sys:_string_parse
 		cmp		bx, 0
 		jne		.ImaIme
 		mov     si, NemaImena1               ; Ako nema, ispisati poruku o gresci
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
 		
 .ImaIme:
@@ -917,23 +917,23 @@ change_dir:
 		pop		ax
 		add		si, ax
 		mov		ax, si
-		call	_string_length
+		call	sys:_string_length
 		cmp		ax, 0
 		je		Komanda
 		inc		ax
 		push 	ax
 		mov		di, .DotDot
 		clc
-		call 	_string_compare
+		call 	sys:_string_compare
 		jc		.Oduzmi
 .Dodaj:
 		mov		ax, prompt
 		mov		bx, si
 		mov		cx, prompt
-		call	_string_join
+		call	sys:_string_join
 		mov		ax, prompt
 		mov		bx, .Slash
-		call	_string_join
+		call	sys:_string_join
 		jmp 	.Loop
 .Oduzmi:
 		mov		di, prompt
@@ -957,15 +957,15 @@ change_dir:
 		mov		ax, di
 		mov		bx, si
 		mov		cx, prompt
-		call	_string_join
+		call	sys:_string_join
 		
-		call	_string_reverse
+		call	sys:_string_reverse
 		cmp byte [si], DELIMIT
 		jne		.FaliSlash
 		jmp		Komanda
 .FaliSlash:
 		mov		bx, .Slash
-		call	_string_join
+		call	sys:_string_join
 		jmp		Komanda
 		
 		.Slash	db DELIMIT, 0
@@ -973,13 +973,13 @@ change_dir:
 ; ------------------------------------------------------------------		
 remove_dir:
 		mov 	si, input
-		call    _string_parse
+		call    sys:_string_parse
 		
 		cmp		bx, 0
 		jne		.ImaIme
 		
 		mov     si, NemaImena1                  ; Ako nije, ispisati poruku o gresci
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
 		
 .ImaIme:
@@ -994,7 +994,7 @@ change_disc:
 		call	_change_disc
 		mov		si, prompt
 		mov		ax, 12
-		call	_string_truncate
+		call	sys:_string_truncate
 		mov		al, [input]
 		mov	byte [si+9], al
 		jmp 	Komanda
@@ -1002,11 +1002,11 @@ change_disc:
 ; ------------------------------------------------------------------		
 path:
 		mov 	si, input
-		call    _string_parse	
+		call    sys:_string_parse	
 		cmp		bx, 0
 		jne		.ImaIme
 		mov     si, PathSpace					; Ako nije zadata putanja, ispisuje sadrzaj          
-        call    _print_string                   ; promenljive okruzenja PATH	
+        call    sys:_print_string               ; promenljive okruzenja PATH	
 		jmp     Komanda
 		
 .ImaIme:
@@ -1018,13 +1018,13 @@ path:
 		jc 		.NoPath					        ; Ako path ne postoji        
 		mov		ax, PathSpace
 		mov		cx, PathSpace
-		call	_string_join
+		call	sys:_string_join
 		mov		bx, .tz
-		call	_string_join
+		call	sys:_string_join
 		jmp 	Komanda
 .ProveriClear:
 		mov		di, .clear
-		call	_string_compare
+		call	sys:_string_compare
 		jnc		.NoClear                   
 		mov		si, PathSpace
 		mov byte [si], 0 
@@ -1032,17 +1032,17 @@ path:
 
 .NoPath:
         mov     si, Err_NP
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
         
 .NoClear:
         mov     si, Err_NC
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
 
 .NoEmpty:
         mov     si, Err_NE
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
         
 	.tz    db ';', 0
@@ -1054,13 +1054,13 @@ exit:
 
 kern_warning:                               ; Kernel ne moze da se izvrsava kao aplikacija
         mov     si, NeMozeKernel
-        call    _print_string
+        call    sys:_print_string
         jmp     Komanda
         
 ; ------------------------------------------------------------------
 GreskaPisanja:                              ; Zajednicko za sve operacije koje imaju upisivanje na disk
         mov		si, Greska_pisanja
-		call	_print_string
+		call	sys:_print_string
         jmp     Komanda 
 ; ------------------------------------------------------------------
 

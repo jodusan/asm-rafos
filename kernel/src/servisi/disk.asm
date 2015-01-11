@@ -164,7 +164,7 @@ _get_dir:
 		inc     di
         
 .PreskociSat:
-		call    _int_to_string              ; Pretvaramo dobijeni broj u string	
+		call    sys:_int_to_string              ; Pretvaramo dobijeni broj u string	
 		push    bx
 		push    ax
 		mov     bx, ax
@@ -186,7 +186,7 @@ _get_dir:
 		inc     di
         
 .PreskociMinut:	
-		call    _int_to_string              ; Pretvaramo dobijeni broj u string
+		call    sys:_int_to_string              ; Pretvaramo dobijeni broj u string
 		push    bx
 		push    ax
 		mov     bx, ax
@@ -209,7 +209,7 @@ _get_dir:
 		inc     di
         
 .PreskociSekund:
-		call    _int_to_string              ; Pretvaramo dobijeni broj u string
+		call    sys:_int_to_string              ; Pretvaramo dobijeni broj u string
 		push    bx
 		push    ax
 		mov     bx, ax
@@ -233,7 +233,7 @@ _get_dir:
 		inc     di
         
 .PreskociDan:
-		call    _int_to_string              ; Pretvaramo dobijeni broj u string			
+		call    sys:_int_to_string              ; Pretvaramo dobijeni broj u string			
 		push    bx
 		push    ax
 		mov     bx, ax
@@ -255,7 +255,7 @@ _get_dir:
 		inc     di
         
 .PreskociMesec:
-		call    _int_to_string              ; Pretvaramo dobijeni broj u string
+		call    sys:_int_to_string              ; Pretvaramo dobijeni broj u string
 		push    bx
 		push    ax
 		mov     bx, ax
@@ -271,7 +271,7 @@ _get_dir:
 		mov     ax, [si]
 		shr     ax, 9
 		add     ax, 1980                    ; Dodajemo 1980 na vrednost godine, jer od tada pocinje
-		call    _int_to_string              ; racunanje i pretvaramo u string
+		call    sys:_int_to_string              ; racunanje i pretvaramo u string
 		
 		push    bx
 		push    ax
@@ -317,7 +317,7 @@ _get_dir:
 		xor     ax, ax
 		mov     ax, [si]
 		mov     bx, 10
-		call    _long_int_to_string         ; Konvertujemo u string
+		call    sys:_long_int_to_string         ; Konvertujemo u string
         
 .ProveraKraja
         cmp byte [di], 0                    ; i dodajemo ispisu
@@ -361,7 +361,7 @@ _get_dir:
 .Kraj:
         mov byte [di], 0
         popa
-        ret
+        retf
 
 	fajl db 0
 
@@ -373,7 +373,7 @@ _get_dir:
 ;-------------------------------------------------------------
 
 _change_attrib:
-        call    _string_uppercase
+        call    sys:_string_uppercase
         call    PodesiIme
         call    UcitajCurrentFolder   
         mov     di, DiskBafer               ; DI pokazuje na tekuci direktorijum								
@@ -382,7 +382,7 @@ _change_attrib:
 		
         mov     al, '+'                     ; Da li je setovanje ili resetovanje atributa?
         mov     si, cx
-        call    _find_char_in_string
+        call    sys:_find_char_in_string
         cmp     ax, 0
         je      .ProveraSlova
         mov byte [plus_flag], 1             ; Nadjen plus u trecem argumentu,sto znaci da je setovanje atributa
@@ -390,22 +390,22 @@ _change_attrib:
 .ProveraSlova:
         pop     di
         mov     al, 'R'
-        call    _find_char_in_string
+        call    sys:_find_char_in_string
         cmp     ax, 0
         jne     .R_Label
 		
         mov     al, 'S'
-        call    _find_char_in_string
+        call    sys:_find_char_in_string
         cmp     ax, 0
         jne     .S_Label
 		
         mov     al, 'H'
-        call    _find_char_in_string
+        call    sys:_find_char_in_string
         cmp     ax, 0
         jne     .H_Label
 
         mov     al, 'A'
-        call    _find_char_in_string
+        call    sys:_find_char_in_string
         cmp     ax, 0
         jne     .A_Label
         jmp     .Kraj
@@ -465,7 +465,7 @@ _change_attrib:
 
 .Greska: 
         stc
-        ret
+        ret			
         
 ; ----------------------------------------------------------------
 ; _load_file -- Ucitava datoteku u operativnu memoriju
@@ -474,7 +474,7 @@ _change_attrib:
 ; ----------------------------------------------------------------
 
 _load_file:
-        call    _string_uppercase
+        call    sys:_string_uppercase
         call    PodesiIme
         mov     [.filename], ax             ; Privremeno cuvamo ime datoteke,
         mov     [.adresa], cx               ; kao i lokaciju gde ce se ucitat.i
@@ -526,9 +526,9 @@ _load_file:
         jnz    .SledecaStavka          
         mov byte [di+11], 0                 ; Zavrsna nula u imenu datoteke
         mov     ax, di                      ; Konvetujemo sva slova u velika slova
-        call    _string_uppercase
+        call    sys:_string_uppercase
         mov     si, [.filename]             ; DS:SI = mesto gde se vrsi ucitavanje
-        call    _string_compare             ; Da li odgovara nekoj od postojecih stavki?
+        call    sys:_string_compare             ; Da li odgovara nekoj od postojecih stavki?
         jc     .NasaoDatoteku
         loop   .SledecaStavka
 
@@ -608,7 +608,7 @@ _load_file:
 .Kraj:
         mov     bx, [.Velicina]             ; Velicinu datoteke vracamo preko BX
         clc                                 ; CF=0, uspesno ucitavanje
-        ret
+        retf
 
 
     .klaster        dw 0                    ; Tekuci klaster datoteke koju ucitavamo
@@ -626,7 +626,7 @@ _load_file:
 ; ----------------------------------------------------------------
 
 _load_file_current_folder:
-        call    _string_uppercase
+        call    sys:_string_uppercase
         call    PodesiIme
         mov     [.filename], ax             ; Privremeno cuvamo ime datoteke,
         mov     [.adresa], cx               ; kao i lokaciju gde ce se ucitati
@@ -665,9 +665,9 @@ _load_file_current_folder:
         jnz    .SledecaStavka          
         mov byte [di+11], 0                 ; Zavrsna nula u imenu datoteke
         mov     ax, di                      ; Konvetujemo sva slova u velika slova
-        call    _string_uppercase
+        call    sys:_string_uppercase
         mov     si, [.filename]             ; DS:SI = mesto gde se vrsi ucitavanje
-        call    _string_compare             ; Da li odgovara nekoj od postojecih stavki?
+        call    sys:_string_compare             ; Da li odgovara nekoj od postojecih stavki?
         jc     .NasaoDatoteku
         loop   .SledecaStavka
 
@@ -766,17 +766,17 @@ _load_file_current_folder:
 _write_file:
         pusha
         mov     si, ax
-        call    _string_length
+        call    sys:_string_length
         cmp     ax, 0
         je near .Greska
         mov     ax, si
-        call    _string_uppercase
+        call    sys:_string_uppercase
         call    PodesiIme                   ; Podesiti pozicije znakova u imenu datoteke
         jc near .Greska
         mov word [.velicina], cx
         mov word [.podaci], bx
         mov word [.filename], ax
-        call    _file_exists                ; Da li datoteka postoji?
+        call    sys:_file_exists            ; Da li datoteka postoji?
         jnc near .Greska
 
 ; Prvo anuliramo sve slobodne klastere (sve clanove liste .SlobodniKlasteri)
@@ -803,7 +803,7 @@ _write_file:
 .Nastavi:
         mov word [.PotrebnoKlastera], ax
         mov word ax, [.filename]            ; Vracamo ime datoteke
-        call    _create_file                ; Kreiramo praznu direktorijumsku stavku za ovu datoteku
+        call    sys:_create_file                ; Kreiramo praznu direktorijumsku stavku za ovu datoteku
         jc near .Greska                     ; Greska ukoliko ne mozemo da upisujemo na medijum
         mov word bx, [.velicina]
         cmp     bx, 0                       ; Ukoliko je datoteka nova (prazna), zavrsavamo
@@ -867,7 +867,7 @@ _write_file:
 .Ulancavanje:
         mov word ax, [.BrojacKlastera]      ; Da li je ovo poslednji potrebni klaster?
         cmp word ax, [.PotrebnoKlastera]
-        je     .PoslednjiKlaster
+        je     	.PoslednjiKlaster
         mov     di, .SlobodniKlasteri
         add     di, cx
         mov word bx, [di]                   ; Uzmi klaster iz tabele
@@ -987,14 +987,14 @@ _write_file:
 .Zavrseno:
         popa
         clc
-        ret
+        retf
 
 .Greska:
   ;     mov     si, Greska_pisanja
-  ;	    call    _print_string
+  ;	    call    sys:_print_string
         popa
         stc                                 ; Greska u pisanju
-        ret
+        retf
 
     .velicina         dw 0
     .klaster          dw 0
@@ -1013,10 +1013,10 @@ _write_file:
 
 _file_exists:
 
-        call    _string_uppercase
+        call    sys:_string_uppercase
         call    PodesiIme	
         push    ax
-        call    _string_length
+        call    sys:_string_length
         cmp     ax, 0
         je     .Greska
         pop     ax
@@ -1025,11 +1025,11 @@ _file_exists:
         pop     ax				
         mov     di, DiskBafer
         call    NadjiDirStavku	
-        ret
+        retf
 .Greska:
         pop     ax
         stc                                 ; CF=1 ako je greska (ali i ako ne postoji - moze da pravi problem)
-        ret
+        retf
 		
 ; -------------------------------------------------------------------
 ; _folder_exists -- Poveriti da li postoji folder sa zadatim imenom
@@ -1037,9 +1037,9 @@ _file_exists:
 ; -------------------------------------------------------------------
 
 _folder_exists:
-        call    _string_uppercase	
+        call    sys:_string_uppercase	
         push    ax
-        call    _string_length
+        call    sys:_string_length
         cmp     ax, 0
         je     .Greska
         pop     ax
@@ -1048,11 +1048,11 @@ _folder_exists:
         pop     ax				
         mov     di, DiskBafer
         call    NadjiUCurrentFolderu
-        ret
+        retf
 .Greska:
         pop     ax
         stc                                 ; CF=1 ako je greska (ali i ako ne postoji - moze da pravi problem)
-        ret
+        retf
 
 ; ------------------------------------------------------------------
 ; _create_file -- Kreira novu praznu datoteku
@@ -1061,11 +1061,11 @@ _folder_exists:
 
 _create_file:
         clc
-        call    _string_uppercase
+        call    sys:_string_uppercase
         call    PodesiIme	
         pusha
         push    ax                          ; Privremeno cuvamo ime datoteke		
-        call    _file_exists                ; Da i vec postoji datoteka sa zadatim imenom?
+        call    sys:_file_exists                ; Da i vec postoji datoteka sa zadatim imenom?
         jnc    .DatotekaPostoji             ; Ako postoji, javi gresku.
 
 ; Root direktorijum je vec u baferu (ucitala ga je rutina _file_exists)
@@ -1117,13 +1117,13 @@ _create_file:
         jc     .Greska
         popa
         clc                                 ; Zavrsetak bez greske, CF=0
-        ret
+        retf
 
 .Greska:
-        jmp     _write_file.Greska          ; Zavrsetak sa greskom, CF=1
+        jmp     sys:_write_file.Greska          ; Zavrsetak sa greskom, CF=1 //TODO
  ;      popa
  ;      stc                                 
- ;      ret
+ ;      retf
 		
 ; ------------------------------------------------------------------
 ; _create_folder -- Kreira novi prazan folder
@@ -1133,7 +1133,7 @@ _create_file:
 _create_folder:
 		pusha
         clc
-        call    _string_uppercase
+        call    sys:_string_uppercase
 		
         call    PodesiImeFoldera
 		jc near .Greska
@@ -1163,7 +1163,7 @@ _create_folder:
 .FolderPostoji:                             ; Datoteka postoji ili je direktorijum pun (nema slobodnih stavki)
 		push 	si
 		mov		si, PostojiFolder
-		call	_print_string
+		call	sys:_print_string
 		pop		si
         pop     ax                          ; Oslobadjamo stek (sacuvano ime datoteke)            
         jmp    .Greska
@@ -1287,7 +1287,7 @@ _create_folder:
 ; ---------------------------------------------------------------------
 
 _remove_file:
-        call    _string_uppercase
+        call    sys:_string_uppercase
         call    PodesiIme
         push    ax                          ; Sacuvati podeseno ime
         clc
@@ -1352,11 +1352,11 @@ _remove_file:
         jc     .Greska
 
 .Zavrsi:
-        ret
+        retf
 
 .Greska:
         stc
-        ret
+        retf
 
     .klaster dw 0
 
@@ -1373,13 +1373,13 @@ _rename_file:
         call    UcitajRootDir
         mov     di, DiskBafer               ; DI je pointer na pocetak direktorijuma
         pop     ax                          ; Vracamo sacuvano staro ime datoteke
-        call    _string_uppercase
+        call    sys:_string_uppercase
         call    PodesiIme
         call    NadjiDirStavku              ; Nalazimo trazenu stavku u direktorijumi (DI pokazuje na nju)
         jc     .GreskaCitanja               ; Greska ukoliko datoteka ne postoji.
         pop     bx                          ; Vracamo novo ime datoteke
         mov     ax, bx
-        call    _string_uppercase
+        call    sys:_string_uppercase
         call    PodesiIme
         mov     si, ax
         mov     cx, 11                      ; Snimamo novo ime u root direktorijum u baferu
@@ -1391,11 +1391,11 @@ _rename_file:
 .GreskaCitanja:
         pop     ax
         stc
-        ret
+        retf
 
 .GreskaPisanja:
         stc
-        ret
+        retf
 
 ; --------------------------------------------------------------------------
 ; _get_file_size -- Vraca informaciju o velicini datoteke
@@ -1405,7 +1405,7 @@ _rename_file:
 
 _get_file_size:
         pusha
-        call    _string_uppercase
+        call    sys:_string_uppercase
         call    PodesiIme
         clc
         push    ax
@@ -1419,12 +1419,12 @@ _get_file_size:
         mov word [.tmp], bx                 ; direktorijumske stavke
         popa
         mov word bx, [.tmp]
-        ret
+        retf
 
 .Greska:
         popa
         stc
-        ret
+        retf
 
        .tmp dw 0
 
@@ -1440,7 +1440,7 @@ _get_file_size:
 PodesiIme:
         pusha
         mov     si, ax
-        call    _string_length
+        call    sys:_string_length
         cmp     ax, 13                      ; Da li je ime datoteke predugacko?
         jg     .Greska                      ; Maksimalno je 8(ime) + 3(ext) +1(tacka) + nula = 13
         cmp     ax, 0
@@ -1520,7 +1520,7 @@ PodesiImeFoldera:
 		pop     cx
 		
         mov     si, ax
-        call    _string_length
+        call    sys:_string_length
         cmp     ax, 13                      ; Da li je ime predugacko?
         jg     .Greska                      ; Maksimalno je 8(ime) + 3(ext) +1(tacka)=13
         cmp     ax, 0
@@ -2012,7 +2012,7 @@ _change_folder:
         pusha
 		mov		si, ax
 		mov		di, .DotDotCmp
-		call	_string_compare
+		call	sys:_string_compare
 		jc		.GetParent
 		
 		call    _string_uppercase
@@ -2142,7 +2142,7 @@ _check_and_remove:
 _remove_folder:
 		pusha
 		clc
-        call    _string_uppercase
+        call    sys:_string_uppercase
         call    PodesiImeFoldera
 		jc		.Greska
         push    ax                          ; Sacuvati podeseno ime
@@ -2257,7 +2257,7 @@ _get_dir_path:
 		
 		call	_change_folder_path         ; Nalazimo trazenu putanju
 		jc		.Greska	                    ; Ako je CF = 1, nema putanje
-		call	_get_dir                    ; U BX se upisuje trazeni sadrzaj
+		call	sys:_get_dir                    ; U BX se upisuje trazeni sadrzaj
 		
 		mov		ax, [.StariCurrentFolder]   ; Vracamo sve na staro
 		mov	    [CurrentFolder], ax
@@ -2457,13 +2457,13 @@ SetFileTimeStamp:
         
 .CitajT:                                    ; _bcd_to_int ulaz: AL BCD; izlaz AX ceo broj
         mov     al, ch                      ; Sati
-		call    _bcd_to_int                 ; U AX je sada ceo broj sati (0-23)
+		call    sys:_bcd_to_int             ; U AX je sada ceo broj sati (0-23)
 		mov     [.sat], ax
         mov     al, cl                      ; Minuti
-		call    _bcd_to_int                 ; U AX je sada ceo broj minuta (0-59)
+		call    sys:_bcd_to_int             ; U AX je sada ceo broj minuta (0-59)
         mov		[.minut], ax
         mov     al, dh                      ; Sekunde
-		call    _bcd_to_int                 ; U AX je sada ceo broj sekundi (0-59)
+		call    sys:_bcd_to_int                 ; U AX je sada ceo broj sekundi (0-59)
 		mov     [.sekund], ax
 
 ; ------------------------------------------------------------
@@ -2512,16 +2512,16 @@ SetFileDateStamp:
         
 .CitajD:
         mov     al, dl                      ; Dan
-        call    _bcd_to_int                 ; U AX je sada ceo broj dana (1-31)
+        call    sys:_bcd_to_int             ; U AX je sada ceo broj dana (1-31)
         mov     [.dan], ax
         mov     al, dh                      ; Mesec
-        call    _bcd_to_int                 ; U AX je sada ceo broj meseca (1-12)
+        call    sys:_bcd_to_int             ; U AX je sada ceo broj meseca (1-12)
         mov     [.mesec], ax
         mov     al, ch                      ; Vek
-        call    _bcd_to_int                 ; U AX je sada ceo broj veka
+        call    sys:_bcd_to_int             ; U AX je sada ceo broj veka
         mov     [.vek], ax
         mov     al, cl                      ; Godina
-        call    _bcd_to_int                 ; U AX je sada ceo broj godine
+        call    sys:_bcd_to_int             ; U AX je sada ceo broj godine
         mov     [.godina], ax
 
 ; -----------------------------------------------------------------------

@@ -36,16 +36,16 @@ _main:
         mov     ax, 1003h                   ; Sjajan tekst bez treptanja
         mov     bx, 0
         int     10h
-        call    _seed_random                ; Seed za generator slucajnih brojeva 
+        call    sys:_seed_random                ; Seed za generator slucajnih brojeva 
 
-        call    _clear_screen               ; Startovati komandni interpreter 
+        call    sys:_clear_screen               ; Startovati komandni interpreter 
         call    _init_scheduler
         call 	set_interrupts
         call 	_command_line
         jmp 	$							; obrisi ovaj hakzor
 
 stop:   mov     si, stop_msg                ; Kada se izadje iz CLI, sistem se zaustavlja.
-        call    _print_string
+        call    sys:_print_string
         cli
         hlt
 

@@ -12,11 +12,10 @@
 ; ------------------------------------------------------------------
 
 %include "OS_API.inc"
-org app_main
 
 %macro  IspisiZnak 1
         add     dl, 4
-        call    _move_cursor
+        call    OS:_move_cursor
         mov     al, %1
         int     10h 
 %endmacro
@@ -26,7 +25,7 @@ org app_main
         mov     dl, (26 + (%1-1)*4)
         mov     si, 3
         mov     di, 13
-        call    _draw_block
+        call    OS:_draw_block
 %endmacro
 
 %macro  Povezi 2
@@ -34,26 +33,31 @@ org app_main
         jne   %%Izlaz
         mov     ax, %2
         mov     bx, 0
-        call    _speaker_tone
+        call    OS:_speaker_tone
         jmp    .Ponovi
 %%Izlaz:
 %endmacro
 
 
 Start:
-        call    _hide_cursor
-        call    _clear_screen
+        call    OS:_get_app_offset          ; nadji offset
+        mov     word [app_offset], ax
+
+        call    OS:_hide_cursor
+        call    OS:_clear_screen
         mov     ax, Naslov                  ; Podesavanje ekrana
+        add     ax, word [app_offset]
         mov     bx, Fusnota
+        add     bx, word [app_offset]
         mov     cx, BELO_NA_PLAVOM  
-        call    _draw_background            ; Iscrtava pozadinu sa zaglavljima (Naslov i Fusnota)
+        call    OS:_draw_background            ; Iscrtava pozadinu sa zaglavljima (Naslov i Fusnota)
         
         mov     bl, CRNO_NA_BELOM           ; Boja se za blok bira na osnovu pozadine (ovde bela)
         mov     dh, 4                       ; Gornji levi ugao belog bloka (linija 4, kolona 5)
         mov     dl, 5
         mov     si, 69                      ; Sirina belog bloka 69 znakova
         mov     di, 21                      ; Poslednja linija belog bloka                      
-        call    _draw_block                 ; Iscrtava beli blok 
+        call    OS:_draw_block                 ; Iscrtava beli blok 
 
           
 ; ---------------------------
@@ -63,7 +67,7 @@ Start:
 ; Gornja linija
         mov     dl, 24                      ; Kolona 24        
         mov     dh, 6                       ; Linija 6
-        call    _move_cursor
+        call    OS:_move_cursor
         mov     ah, 0Eh
         mov     al, 196                     ; IBM graficki znak za crticu
         mov     cx, 31                      ; Sirina 31 znak
@@ -76,7 +80,7 @@ Start:
 
         mov     dl, 24                      ; Kolona 24                   
         mov     dh, 18                      ; Linija 18
-        call    _move_cursor
+        call    OS:_move_cursor
         mov     ah, 0Eh
         mov     al, 196                     ; IBM graficki znak za crticu
         mov     cx, 31                      ; Sirina 31 znak
@@ -89,25 +93,25 @@ Start:
  
         mov     dl, 23                      ; Gornji levi ugao
         mov     dh, 6
-        call    _move_cursor
+        call    OS:_move_cursor
         mov     al, 218                     ; IBM graficki znak 
         int     10h
 
         mov     dl, 55                      ; Gornji desni ugao
         mov     dh, 6
-        call    _move_cursor
+        call    OS:_move_cursor
         mov     al, 191                     ; IBM graficki znak 
         int     10h
 
         mov     dl, 23                      ; Donji levi ugao
         mov     dh, 18
-        call    _move_cursor
+        call    OS:_move_cursor
         mov     al, 192                     ; IBM graficki znak 
         int     10h
 
         mov     dl, 55                      ; Donji desni ugao
         mov     dh, 18
-        call    _move_cursor
+        call    OS:_move_cursor
         mov     al, 217                     ; IBM graficki znak 
         int     10h
 
@@ -118,7 +122,7 @@ Start:
         mov     dh, 7
         mov     al, 179                     ; IBM graficki znak za vertikalnu crticu
 .Petlja3:
-        call    _move_cursor
+        call    OS:_move_cursor
         int     10h
         inc     dh
         cmp     dh, 18                      ; Visina vertikalne linije je 18 znakova
@@ -128,7 +132,7 @@ Start:
         mov     dh, 7
         mov     al, 179                     ; IBM graficki znak za vertikalnu crticu
 .Petlja4:
-        call    _move_cursor
+        call    OS:_move_cursor
         int     10h
         inc     dh
         cmp     dh, 18                      ; Visina vertikalne linije je 18 znakova
@@ -148,7 +152,7 @@ Start:
         mov     dh, 7
         mov     al, 179                     ; IBM graficki znak za vertikalnu crticu
 .Petlja5:
-        call    _move_cursor
+        call    OS:_move_cursor
         int     10h
         inc     dh
         cmp     dh, 18
@@ -160,7 +164,7 @@ Start:
         mov     dh, 6
         mov     dl, 27
 .Petlja6:
-        call    _move_cursor
+        call    OS:_move_cursor
         int     10h
         add     dl, 4
         cmp     dl, 55
@@ -170,7 +174,7 @@ Start:
         mov     dh, 18
         mov     dl, 27
 .Petlja7:
-        call    _move_cursor
+        call    OS:_move_cursor
         int     10h
         add     dl, 4
         cmp     dl, 55
@@ -209,7 +213,7 @@ Start:
 ; Sada ih pojedinacno povezujemo sa visinom tona
 
 .Ponovi:
-        call    _wait_for_key
+        call    OS:_wait_for_key
    
         Povezi 'z', 4000
         Povezi 'x', 3600
@@ -222,7 +226,7 @@ Start:
  
         cmp     al, ' '
         jne    .Zavrsetak
-        call    _speaker_off
+        call    OS:_speaker_off
         jmp    .Ponovi
 
 .Zavrsetak:
@@ -233,12 +237,14 @@ Start:
         jmp    .Ponovi
 
 .Kraj:
-        call    _speaker_off
-        call    _clear_screen
-        call    _show_cursor
-        ret			                        ; Povratak u shell
+        call    OS:_speaker_off
+        call    OS:_clear_screen
+        call    OS:_show_cursor
+        call    OS:_sys_exit            ; Povratak u shell			                        
 
     Naslov  db 'RAF_OS demo klavijatura', 0
     Fusnota db 'Pritisni odgovarajuci taster za zvuk, Space za prekid zvuka, Q za izlaz', 0
+
+    app_offset dw 0
 
 

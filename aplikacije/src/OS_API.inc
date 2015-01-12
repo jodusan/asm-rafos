@@ -14,14 +14,15 @@
 ; ------------------------------------------------------------------
 ; Vazne memorijske lokacije
 
+OS 			    equ 2000h
+_sys_exit 		equ 0267h
+
 os_main         equ 0000h                   ; Prostor kernela
-app_main        equ 8400h                   ; Prostor korisnika
+app_main        equ 8400h                   ; OBRISATI
+_get_app_offset equ 025Eh 					; Vraca offset za lokalne adrese u AX
 
-input           equ app_main - 100h         ; Deljene oblasti izmedju
-arg1            equ app_main - 080h         ; kernela i korisnika
-
-_OS 			    equ 2000h
-_sys_exit 			equ 00D2h
+input           equ 8400h - 100h        	; Deljene oblasti izmedju
+arg1            equ 8400h - 080h         	; kernela i korisnika
 
 ; ------------------------------------------------------------------
 ; Definicije boja
@@ -151,23 +152,23 @@ _sys_exit 			equ 00D2h
 ; ----------------------------------------------------
 
 _print_string       equ 0003h
-_move_cursor        equ 0006h
-_clear_screen       equ 0009h
-_print_horiz_line   equ 000Ch
-_print_newline      equ 000Fh
-_draw_background    equ 002Ah
-_draw_block         equ 00B4h	
-_dialog_box         equ 003Ch	                    
-_get_cursor_pos     equ 0069h	
-_print_space        equ 006Ch	
-_dump_string        equ 006Fh	
-_print_digit        equ 0072h	
-_print_1hex         equ 0075h	
-_print_2hex         equ 0078h	
-_print_4hex         equ 007Bh
-_show_cursor        equ 008Ah	
-_hide_cursor        equ 008Dh	
-_dump_registers     equ 0090h	
+_move_cursor        equ 000Ch
+_clear_screen       equ 0015h
+_print_horiz_line   equ 001Eh
+_print_newline      equ 0027h
+_draw_background    equ 0078h
+_draw_block         equ 0204h	
+_dialog_box         equ 00B7h	                    
+_get_cursor_pos     equ 013Eh	
+_print_space        equ 0147h	
+_dump_string        equ 0150h	
+_print_digit        equ 0159h	
+_print_1hex         equ 0162h	
+_print_2hex         equ 016Bh	
+_print_4hex         equ 0174h
+_show_cursor        equ 018Fh	
+_hide_cursor        equ 0198h	
+_dump_registers     equ 01A1h	
 
 ; ====================================================
 ; Rutine za rad sa tastaturom 
@@ -183,8 +184,8 @@ _dump_registers     equ 0090h
 
 ; ----------------------------------------------------
 
-_wait_for_key       equ 0012h	
-_check_for_key      equ 0015h	
+_wait_for_key       equ 0030h	
+_check_for_key      equ 0039h	
 
 ; ====================================================
 ; Sistem datoteka FAT12 (rutine za rad sa flopi diskom)
@@ -221,14 +222,14 @@ _check_for_key      equ 0015h
 
 ; ----------------------------------------------------
 
-_load_file          equ 0021h	
-_get_dir            equ 0042h	
-_write_file         equ 0096h	
-_file_exists        equ 0099h	
-_create_file        equ 009Ch	
-_remove_file        equ 009Fh	
-_rename_file        equ 00A2h	
-_get_file_size      equ 00A5h	
+_load_file          equ 005Dh	
+_get_dir            equ 00C9h	
+_write_file         equ 01B3h	
+_file_exists        equ 01BCh	
+_create_file        equ 01C5h	
+_remove_file        equ 01CEh	
+_rename_file        equ 01D7h	
+_get_file_size      equ 01E0h	
 
 ; ====================================================
 ; Rutine za rad sa zvukom
@@ -243,8 +244,8 @@ _get_file_size      equ 00A5h
 
 ; ----------------------------------------------------
 
-_speaker_tone       equ 001Bh	
-_speaker_off        equ 001Eh	
+_speaker_tone       equ 004Bh	
+_speaker_off        equ 0054h	
 
 ; ====================================================
 ; Rutine za rad sa stringovima
@@ -334,27 +335,27 @@ _speaker_off        equ 001Eh
 
 ; ----------------------------------------------------
 
-_int_to_string       equ 0018h	
-_string_length       equ 002Dh	
-_string_uppercase    equ 0030h
-_string_lowercase    equ 0033h
-_input_string        equ 0036h 
-_string_copy         equ 0039h
-_string_join         equ 003Fh	
-_string_compare      equ 0045h	
-_string_chomp        equ 0048h	
-_string_strip        equ 004Bh	
-_string_truncate     equ 004Eh
-_get_time_string     equ 0055h	
-_get_date_string     equ 005Dh	
-_find_char_in_string equ 0066h	
-_long_int_to_string  equ 007Eh	
-_string_strincmp     equ 0093h	
-_string_reverse      equ 00AEh	
-_string_to_int       equ 00B1h	
-_string_charchange   equ 00BAh	
-_sint_to_string      equ 00C0h	
-_string_parse        equ 00C3h	                  
+_int_to_string       equ 017Dh	
+_string_length       equ 008Ah	
+_string_uppercase    equ 0093h
+_string_lowercase    equ 009Ch
+_input_string        equ 01E9h 
+_string_copy         equ 00AEh
+_string_join         equ 00C0h	
+_string_compare      equ 00D2h	
+_string_chomp        equ 00DBh	
+_string_strip        equ 00E4h	
+_string_truncate     equ 00EDh
+_get_time_string     equ 00FFh	
+_get_date_string     equ 011Ah	
+_find_char_in_string equ 0135h	
+_long_int_to_string  equ 017Dh	
+_string_strincmp     equ 01AAh	
+_string_reverse      equ 01F2h	
+_string_to_int       equ 01FBh	
+_string_charchange   equ 0216h	
+_sint_to_string      equ 0228h	
+_string_parse        equ 0231h	                  
                     
 ; ====================================================
 ; Matematicke rutine
@@ -378,10 +379,10 @@ _string_parse        equ 00C3h
 
 ; ----------------------------------------------------
 
-_bcd_to_int         equ 0051h	
-_long_int_negate    equ 0081h
-_seed_random        equ 005Ah
-_get_random         equ 00B7h	
+_bcd_to_int         equ 00F6h	
+_long_int_negate    equ 0186h
+_seed_random        equ 0111h
+_get_random         equ 020Dh	
 
 ; ====================================================
 ; Rutine za rad sa portovima
@@ -406,11 +407,11 @@ _get_random         equ 00B7h
 
 ; ----------------------------------------------------
 
-_send_via_serial    equ 0060h	
-_get_via_serial     equ 0063h	
-_serial_port_enable equ 00BDh
-_port_byte_out      equ 00C9h	
-_port_byte_in       equ 00CCh	
+_send_via_serial    equ 0123h	
+_get_via_serial     equ 012Ch	
+_serial_port_enable equ 021Fh
+_port_byte_out      equ 0243h	
+_port_byte_in       equ 024Ch	
 	
 ; ====================================================
 ; Ostale rutine
@@ -431,10 +432,10 @@ _port_byte_in       equ 00CCh
 
 ; ----------------------------------------------------
 
-_pause              equ 0024h	
-_fatal_error        equ 0027h		
-_get_api_version    equ 0057h	
-_run_batch          equ 00C6h
+_pause              equ 0066h	
+_fatal_error        equ 006Fh		
+_get_api_version    equ 0108h	
+_run_batch          equ 023Ah
 
 
 ; ====================================================
@@ -447,4 +448,4 @@ _run_batch          equ 00C6h
 
 ; ----------------------------------------------------
 
-_print_file			equ 00CFh
+_print_file			equ 0255h

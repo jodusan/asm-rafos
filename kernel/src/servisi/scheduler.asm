@@ -12,9 +12,6 @@
 ;
 ; -----------------------------------------------------------------------------
 
-
-
-
 ; --------------------------------------------------------------------------
 ; _init_scheduler -- Inicijalizuje scheduler tabele i postavlja shell kao
 ; jedini proces
@@ -34,12 +31,13 @@ _init_scheduler:
 
 ; --------------------------------------------------------------------------
 ; _ubaci_proces -- Ucitava proces u memoriju
-; Ulaz: AX = datoteka
+; Ulaz: AX = datoteka, BX = 1 - fg proces, 0 - bg proces
 ; Izlaz: CF=1 ukoliko nema trazene datoteke ili nije moguce ucitati datoteku u
 ; memoriju verovatno zato sto nema dovoljno memorije
 ; --------------------------------------------------------------------------
 _ubaci_proces:
 	pusha
+	push bx 							; sacuvamo tip procesa
 	push ax 							; sacuvamo ime datoteke na stack-u
 
 	; odredimo velicinu fajla
@@ -50,6 +48,7 @@ _ubaci_proces:
 	jne .nadjen_fajl
 
 	pop ax
+	pop bx
 	popa
 	ret
 .nadjen_fajl:
@@ -87,6 +86,7 @@ _ubaci_proces:
 	call _print_string
 	stc
 	pop ax
+	pop bx
 	popa 								; postavimo CF jer nismo nasli slobodnu memoriju
 	ret 
 .nadjen_pid:
@@ -118,6 +118,7 @@ _ubaci_proces:
 	call _string_copy
 
 	pop ax 								; na ax vratimo velicinu
+	pop bx
 	call _update_scheduler
 
 	popa
@@ -125,11 +126,11 @@ _ubaci_proces:
 
 ; --------------------------------------------------------------------------
 ; _update_scheduler -- Update-uje sch_mmt, sch_sizes, sch_queue...
-;  Ucitava program u memoriju 
-; Ulaz: AX = velicina, CX = pid procesa
+; Ulaz: AX = velicina, CX = pid procesa, BX = 1 - fg proces, 0 - bg proces
 ; --------------------------------------------------------------------------
 _update_scheduler:
 	pusha
+	push bx     							; sacuvamo tip procesa (fg/bg)
 
 	; update memory management table
 	mov si, cx
@@ -204,11 +205,25 @@ _update_scheduler:
 	mov si, sch_queue
 	xor ax, ax
 	mov al, byte [sch_queue_size]
-	add si, ax							; u niz sch_queue, na sch_queue+sch_queue_size dodaj novi
+	dec al
+	add si, ax							; u niz sch_queue, na sch_queue+sch_queue_size-1 (tu se nalazi shell) dodaj novi
 	mov byte [si], cl 					; proces sa pidom cx
 
+	pop bx
+	cmp bx, 0
+	je .bg_proces
+
+.fg_proces:
+	mov	byte [sch_fg], cl 				; postavi trenutni proces na sch_fg
+	jmp .kraj
+
+.bg_proces:
+	inc si
+	mov al, 0
+	mov byte [si], al 					; dodaj shell na kraj queue-a
 	inc byte [sch_queue_size] 			; povecavamo velicinu queue-a
-	
+
+.kraj:
 	xor al, al							; Dozvoli NMI prekide
 	out 070h, al						; Dozvoli prekide
 	sti
@@ -217,25 +232,9 @@ _update_scheduler:
 	ret
 
 ; --------------------------------------------------------------------------
-; _to_foreground -- Postavlja proces u foreground.
-; Ulaz: AX = pid procesa
-; --------------------------------------------------------------------------
-;SMISLITI STA DA RADIMO SA OVIM
-
-
-; --------------------------------------------------------------------------
 ; _izbaci_proces -- Brise proces pid iz queue-a, update-uje mmt i ostalo 
 ; --------------------------------------------------------------------------
 _izbaci_proces:
-	
-	push sys
-	pop ds
-	push sys
-	pop es
-	push sys
-	pop gs
-	push sys
-	pop fs
 	
 	xor ch, ch
 	mov cl, byte [sch_active_proc]		; na cx vratimo pid
@@ -300,6 +299,18 @@ _izbaci_proces:
 
 	jmp $								; cekamo prekidnu rutinu za scheduler
 
+	ret
+
+; --------------------------------------------------------------------------
+; _get_app_offset -- Vraca lokaciju gde je program ucitan, koristi se za
+; korekciju adresa korisnickih aplikacija
+; Izlaz: AX - offset
+; --------------------------------------------------------------------------
+_get_app_offset:
+	xor ah, ah
+	mov al, byte [sch_active_proc]
+	shl ax, 10
+	add ax, 8000h 						; ax = 8000h + pid * 400h
 	ret
 
 ; --------------------------------------------------------------------------

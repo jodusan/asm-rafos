@@ -22,32 +22,32 @@
     %include "vektor.inc"
 
 _main:
-        mov     ax, 0           
-        mov     ss, ax                      ; Segment koji koristi BIOS
-        mov     sp, 08FFFh                  ; Inicijalizacija stek pointera na vrh steka
-        cld                                 ; Pravac operacija sa stringovima (ka rastucim adresama)
+    mov     ax, 0           
+    mov     ss, ax                      ; Segment koji koristi BIOS
+    mov     sp, 08FFFh                  ; Inicijalizacija stek pointera na vrh steka
+    cld                                 ; Pravac operacija sa stringovima (ka rastucim adresama)
 
-        mov     ax, cs                      ; Podesavanje svih segmenata na segment gde se ucitava kernel.
-        mov     ds, ax                      ; Nakon ovoga, vise nema potrebe voditi racuna o segmentima
-        mov     es, ax                      ; jer ce se sve (osim stek operacija) odvijati unutar nasih 64K.
-        mov     fs, ax
-        mov     gs, ax
+    mov     ax, cs                      ; Podesavanje svih segmenata na segment gde se ucitava kernel.
+    mov     ds, ax                      ; Nakon ovoga, vise nema potrebe voditi racuna o segmentima
+    mov     es, ax                      ; jer ce se sve (osim stek operacija) odvijati unutar nasih 64K.
+    mov     fs, ax
+    mov     gs, ax
 
-        mov     ax, 1003h                   ; Sjajan tekst bez treptanja
-        mov     bx, 0
-        int     10h
-        call    _seed_random                ; Seed za generator slucajnih brojeva 
+    mov     ax, 1003h                   ; Sjajan tekst bez treptanja
+    mov     bx, 0
+    int     10h
+    call    _seed_random                ; Seed za generator slucajnih brojeva 
 
-        call    _clear_screen               ; Startovati komandni interpreter 
-        call    _init_scheduler
-        call 	set_interrupts
-        call 	_command_line
-        jmp 	$							; obrisi ovaj hakzor
+    call    _clear_screen               ; Startovati komandni interpreter 
+    call    _init_scheduler
+    call 	set_interrupts
+    call 	_command_line
 
-stop:   mov     si, stop_msg                ; Kada se izadje iz CLI, sistem se zaustavlja.
-        call    _print_string
-        cli
-        hlt
+stop:
+    call    _clear_screen
+    mov     si, stop_msg                ; Kada se izadje iz CLI, sistem se zaustavlja.
+    call    _print_string
+    hlt
 
 stop_msg   db 13,10, '   >>> Sistem zaustavljen. Mozete iskljuciti racunar.', 0
 
@@ -68,4 +68,5 @@ stop_msg   db 13,10, '   >>> Sistem zaustavljen. Mozete iskljuciti racunar.', 0
     %include "servisi/string.asm"
     %include "servisi/printer.asm"
 	%include "servisi/prekidi.asm"
+    %include "servisi/segswap.asm"
     

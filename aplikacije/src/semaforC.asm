@@ -11,13 +11,25 @@
 
 %include "OS_API.inc"
 
-	mov si, Naslov
-	call OS:_get_app_offset
-	add si, ax
-	call OS:_print_string
-	jmp $
-    call OS:_sys_exit
-    ret
+	;call OS:_get_app_offset
+
+petlja:
+
+	call OS:_get_cursor_pos
+	push dx
+
+	mov si, 1h
+	mov dh, 1
+	mov dl, 30h
+	mov di, 3
+	mov bl, 10101010b
+	call OS:_draw_block
+
+	pop dx
+	call OS:_move_cursor
+
+	jmp petlja
+
 
 Naslov db 'RAF_OS dummy', 13, 10, 0
 

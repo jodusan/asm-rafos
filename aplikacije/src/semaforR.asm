@@ -17,7 +17,7 @@ petlja:
 	mov dh, 0
 	mov dl, 4Fh
 	mov di, 1
-	mov bl, 10101010b
+	mov bl, 01000100b
 	push dx
 
 	cli									; Zabrani prekide. 

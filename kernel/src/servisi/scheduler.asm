@@ -19,7 +19,7 @@
 _init_scheduler: 
 	mov byte [sch_active_proc], 0		; trenutno aktivan proces je shell ciji je pid = 0
 	mov byte [sch_fg], 0 				; shell je u foreground-u
-	mov byte [sch_kills], 0
+	mov byte [sch_kills], 0 			
 	mov byte [sch_sizes], 1 			; shell procesu dodeljujemo 1kb (sch_sizes[0])
 	mov word [sch_stacks], sp			; izdvajamo 28kB od 0FFFFh (dno SS-a) za druge procese,
 										; a shell dobije od 28kB na gore
@@ -40,41 +40,38 @@ _ubaci_proces:
 	push bx 							; sacuvamo tip procesa
 	push ax 							; sacuvamo ime datoteke na stack-u
 
-	; odredimo velicinu fajla
 	xor bx, bx
 	clc
-	call _get_file_size
-	cmp bx, 0
-	jne .nadjen_fajl
+	call _get_file_size					; odredimo velicinu fajla (bx je velicina u byte-ovima)
+	cmp bx, 0 							; ukoliko nije 0 
+	jne .nadjen_fajl 					; fajl postoji 
 
 	pop ax
 	pop bx
 	popa
 	ret
+
 .nadjen_fajl:
 	mov ax, bx							; pretvaramo velicinu u kb
 	xor dx, dx							; cistimo dx registar jer zelimo da delimo
 	mov bx, 1024 						; dx(prazan):ax(velicina u bajtovima) sa bx(1024)
 	div bx 								; da dobijemo broj kilobajtova u ax
-	cmp dx, 0 							; ako ne postoji ostatak kul idemo dalje
+	cmp dx, 0 							; ako ne postoji ostatak idemo dalje
 	je	.sch_nastavi 						
-	inc ax 								; ako postoji samo povecaj ax da bi mu dali dovoljno mesta
+	inc ax 								; ako postoji samo povecaj ax da bismo mu dali dovoljno mesta
 .sch_nastavi:
 	mov cx, 1
 	mov	bx, 0           				; brojac slobodnih memorijskih jedinica do cx-te
-.petlja:
-	mov	si, cx
-	add si, sch_mmt
-	cmp byte [si], 0					; testiramo cx-ti bajt u mmt-u
-	jne .resetuj_brojac					; ako nije slobodno skoci na resetuj brojac 
-
-	inc bx
-	cmp bx, ax
+.petlja: 								; Trazimo ax slobodnih mesta u mmt-u i setujemo pid na cx 
+	mov	si, cx 							 
+	add si, sch_mmt 					
+	cmp byte [si], 0					; if mmt[cx] != 0  // testiramo cx-ti bajt u mmt-u
+	jne .resetuj_brojac					; resetuj brojac 
+	inc bx 								; ako jeste povecaj bx
+	cmp bx, ax 							; da li je sada bx == ax
 	jl .sledeci_bajt
-										; proces ucitavamo na lokacije [cx - ax(=bx) + 1, cx],
-										; a njegov pid je cx - ax + 1
-	sub cx, ax
-	inc cx								; na cx izracunamo pid								
+	sub cx, ax 							; proces ucitavamo na mmt[cx-ax+1] i sledecih cx mesta 
+	inc cx								; a njegov pid je cx-ax+1 i to smestamo u cx							
 	jmp .nadjen_pid						
 .resetuj_brojac
 	xor bx, bx
@@ -82,26 +79,26 @@ _ubaci_proces:
 	inc cx
 	cmp cx, 29
 	jl .petlja
-	mov si, sch_no_memory_error
+	mov si, sch_no_memory_error 		; posto cx nije manje od 29 printamo error i izlazimo sa CF=1
 	call _print_string
 	stc
 	pop ax
 	pop bx
-	popa 								; postavimo CF jer nismo nasli slobodnu memoriju
+	popa 								
 	ret 
-.nadjen_pid:
-	mov dx, ax
-	pop ax
 
+; Ucitavamo proces u memoriju na odredjenu adresu, upisujemo ime u sch_names	
+.nadjen_pid: 							; PID za proces je pronadjen
+	mov dx, ax 							; u ax je velicina 
+	pop ax 								; vratimo ime na ax
 	push dx 							; ubacimo velicinu na stack
 	push cx 							; ubacimo pid na stack
 
 	mov bx, cx 							; na bx izracunamo gde program treba da se ucita
-	shl bx, 10
-	add bx, 8000h
-	mov cx, bx 							; pomerimo adresu na cx jer se tako prosledjuje u _load_file_current_folder
+	shl bx, 10 							; bx * 2^10 (KB)
+	add bx, 8000h 						; dodamo na 8000
+	mov cx, bx 							; pomerimo adresu na cx kao parametar za _load_file_current_folder
 	xor bx, bx
-
 	push ax 							; ubacimo ime na stack 
 
 	call _load_file_current_folder		; ucitamo program u memoriju
@@ -109,62 +106,60 @@ _ubaci_proces:
 	pop ax 								; na ax vratimo ime
 	pop cx 								; na cx vratimo pid
 
-	; sacuvamo ime procesa u tabelu imena
-	mov si, ax
-	mov di, sch_names
-	mov bx, cx
-	shl bx, 5 							; pid * 32
-	add di, bx
-	call _string_copy
+	mov si, ax 							; sacuvamo ime procesa u si
+	mov di, sch_names 					; sch_names je velicine 32x32 i koristimo pid * 32 offset za upisivanje imena
+	mov bx, cx 							; 
+	shl bx, 5 							; pid * 32 
+	add di, bx 							; sch_names[pid*32] 
+	call _string_copy 					; kopiramo iz si (ime procesa) u di (sch_names[pid*32])
 
 	pop ax 								; na ax vratimo velicinu
-	pop bx
+	pop bx 								; na bx tip procesa
 	call _update_scheduler
 
 	popa
 	ret
 
 ; --------------------------------------------------------------------------
-; _update_scheduler -- Update-uje sch_mmt, sch_sizes, sch_queue...
+; _update_scheduler -- Azurira tabele sch_mmt sch_sizes sch_queue 
 ; Ulaz: AX = velicina, CX = pid procesa, BX = 1 - fg proces, 0 - bg proces
 ; --------------------------------------------------------------------------
 _update_scheduler:
 	pusha
 	push bx     							; sacuvamo tip procesa (fg/bg)
 
-	; update memory management table
-	mov si, cx
-	add si, sch_mmt
+	mov si, cx 								; azuriranje sch_mmt tabele
+	add si, sch_mmt 						; od sch_mmt[pid]
 	push cx
-	mov cx, ax
+	mov cx, ax 								; do sch_mmt[pid+velicina]
 .petlja:
-	mov	byte [si], 0FFh
-	inc si
+	mov	byte [si], 0FFh 					; ubaci jedinice
+	inc si 	
 	loop .petlja
-	pop cx
+	pop cx 									; vrati pid na cx
 
 	; update sch_sizes
 	mov si, sch_sizes
-	add si, cx
-	mov byte [si], al
+	add si, cx 			
+	mov byte [si], al 						; na sch_sizes[pid] upisi velicinu procesa
 
-	; izracunaj adresu za stack pointer
-	mov bx, ax
-	add bx, cx
-	dec bx
-	shl bx, 10
-	add bx, 08FFFh
+	mov bx, ax 								
+	add bx, cx 								
+	dec bx 									
+	shl bx, 10 								; racunamo adresu steka za program kao : velicina+pid-1 * 2^10 + 8FFFF (ofset koji smo zadali)
+	add bx, 08FFFh 							; na adresu koja je u bx smestamo stek pointer
 
-	; privremeno zameni stack
-	mov dx, sp
-	mov sp, bx
+	mov dx, sp 							 	; privremeno zameni stek
+	mov sp, bx 								
 
 	; izracunaj segmente za novi proces
 	mov bx, cx
 	shl bx, 6								; cs = 2000h + ( 8000h + pid * 400h ) / 10h
 	add bx, 2800h							; skraceno: cs = 2000h + 800h + pid * 40h
 	
+
 	; ubaci predefinisane vrednosti na stack novog procesa
+	; tako da pomisli da se vec izvrsavao 
 
 	pushf								
 
@@ -191,35 +186,35 @@ _update_scheduler:
 	mov si, sch_stacks
 	add si, cx
 	add si, cx
-	mov word [si], bx
+	mov word [si], bx  					; na sch_stacks[pid*2 (jer je dw)] ubacimo vrednost sp-a za proces 
 
-	; update sch_kills
+	
 	mov si, sch_kills
 	add si, cx
-	mov byte [si], 0
+	mov byte [si], 0 					; na sch_kills[pid] ubacimo 0
 	
 	cli									; Zabrani prekide. 
 	mov al, 080h						; Zabrani NMI prekide
 	out 070h, al 	
 
-	mov si, sch_queue
+	mov si, sch_queue 					
 	xor ax, ax
-	mov al, byte [sch_queue_size]
+	mov al, byte [sch_queue_size] 
 	dec al
-	add si, ax							; u niz sch_queue, na sch_queue+sch_queue_size-1 (tu se nalazi shell) dodaj novi
-	mov byte [si], cl 					; proces sa pidom cx
+	add si, ax							; u niz sch_queue, na sch_queue+sch_queue_size-1 dodaj novi
+	mov byte [si], cl 					; proces sa pidom cx a posle cemo (zavisno da li je fg ili bg) shell dodati na kraj
 
-	pop bx
-	cmp bx, 0
+	pop bx 								; vrati bg/fg u bx
+	cmp bx, 0 
 	je .bg_proces
 
 .fg_proces:
-	mov	byte [sch_fg], cl 				; postavi trenutni proces na sch_fg
-	jmp .kraj
+	mov	byte [sch_fg], cl 				; Ukoliko je trenutni proces fg, ne zelimo shell da se izvrsava 
+	jmp .kraj 							
 
 .bg_proces:
-	inc si
-	mov al, 0
+	inc si 								; ako je background proces 
+	mov al, 0 							; shell id = 0
 	mov byte [si], al 					; dodaj shell na kraj queue-a
 	inc byte [sch_queue_size] 			; povecavamo velicinu queue-a
 
@@ -239,35 +234,34 @@ _izbaci_proces:
 	xor ch, ch
 	mov cl, byte [sch_active_proc]		; na cx vratimo pid
 	
-	mov si, sch_sizes
+	mov si, sch_sizes 					
 	add si, cx
 	xor ah, ah
-	mov al, byte [si]					; na ax vratimo velicinu
+	mov al, byte [si]					; na ax stavi velicinu 
 
-	; update sch_sizes
-	mov si, sch_sizes
-	add si, cx
-	mov byte [si], 0
+	mov si, sch_sizes 
+	add si, cx 
+	mov byte [si], 0  					; na sch_sizes[pid] ubaci 0
 
-	; update memory management table
-	mov si, cx
-	add si, sch_mmt
-	push cx
-	mov cx, ax
+	; azuriraj mmt
+ 	mov si, cx 							
+	add si, sch_mmt 					; sch_mmt[pid]
+	push cx 							; sacuvaj pid
+	mov cx, ax 							; postavi brojac na velicinu procesa
 
 	cli									; Zabrani prekide. 
 	mov al, 080h						; Zabrani NMI prekide
 	out 070h, al 	
 
-.petlja:								; ocisti mmt
-	mov byte [si], 0
+.petlja:								; ocisti mmt ubacivanjem nula na mesto 
+	mov byte [si], 0 					; koje je zauzimao proces
 	inc si
 	loop .petlja
 
-	pop cx
+	pop cx 								; vratimo pid
 
 	dec byte [sch_queue_size]			; proces koji se izvrsava je na kraju queue-a,
-										; tako da samo smanjimo qeueu_size
+										; tako da samo smanjimo queue_size
 
 	; proveri da li je proces bio u foreground-u i ako jeste vrati shell u foreground
 	mov cl, byte [sch_active_proc]
@@ -285,7 +279,7 @@ _izbaci_proces:
 	xor ax, ax
 	mov al, byte [sch_queue_size]
 	add si, ax							
-	mov byte [si], cl 					
+	mov byte [si], cl 			 		; ubacimo shell na kraj queue-a		
 
 	inc byte [sch_queue_size]
 
@@ -322,11 +316,10 @@ _kill_pid:
 
 	mov si, sch_kills
 	add si, ax
-	mov byte [si], 1  					; za ubijanje
+	mov byte [si], 1  					; za ubijanje 
 
 	popa
 	ret
-
 
 ; --------------------------------------------------------------------------
 ; _print_pids -- Stampa pid - ime proces za aktivne procese
@@ -340,7 +333,7 @@ _print_pids:
 
 	mov si, sch_queue
 	xor ch, ch
-	mov cl, byte [sch_queue_size]
+	mov cl, byte [sch_queue_size] 		; postavimo brojac na sch_queue_size
 
 .petlja:
 	
@@ -353,8 +346,8 @@ _print_pids:
 	je .sledeci
 
 	cmp ax, 10
-	jge .print 
-	call _print_space
+	jge .print 							; ukoliko je broj manji od 9 
+	call _print_space 					; printamo spejs da bi dvocifreni brojevi bili poravnati
 .print:
 	call _print_dec						; odstampamo pid
 
@@ -379,7 +372,6 @@ _print_pids:
 	popa
 	ret
 
-sch_no_memory_error db 'Nema dovoljno memorije!', 13, 10, 0
 sch_active_proc db 0					; trenutno aktivan proces
 sch_fg db 0 							; pid procesa u foreground-u
 sch_sizes times 32 db 0					; velicine procesa(kB), primer sch_sizes[1] 
@@ -391,6 +383,8 @@ sch_mmt times 32 db 0   				; tabela zauzetih memorijskih prostora
 sch_kills times 32 db 0  				; tabela procesa koji treba da budu ubijeni (kada oni dodju na red za izvrsavanje)
 
 sch_names times 1024 db 0               ; tabela imena pokrenutih procesa, 32x32
+
+sch_no_memory_error db 'Nema dovoljno memorije!', 13, 10, 0
 sch_pids_string_start db '==== Aktivni procesi ( pid proces ) ====', 13, 10, 0
 sch_pids_string_end db   '========================================', 13, 10, 0
 
@@ -414,7 +408,7 @@ _dbg_dump:
 	mov si, _dbg_string_start
 	call _print_string
 	
-	; active process string: value
+	; printa koji je proces aktivan
 	mov si, _dbg_active_proc
 	call _print_string
 	xor ax,ax
@@ -422,7 +416,7 @@ _dbg_dump:
 	call _print_digit
 	call _print_newline
 
-	; sizes content petlj
+	; printa sch_sizes niz
 	mov si, _dbg_sizes_content
 	call _print_string
 	mov cx, 32
@@ -436,7 +430,7 @@ _dbg_dump:
 
 	call _print_newline
 
-	; queue content petlj
+	; printa sch_queue niz
 	mov si, _dbg_queue_content
 	call _print_string
 	xor ch, ch
@@ -449,12 +443,9 @@ _dbg_dump:
 	inc si
 	loop .dbg_petlja
 
-	;mov al, byte[sch_queue + 1]
-	;call _print_2hex
-
 	call _print_newline	
 
-	; queue size sring: value
+	; printa queue_size
 	mov si, _dbg_queue_size
 	call _print_string
 	xor ax, ax
@@ -482,6 +473,7 @@ _dbg_dump:
 	popa
 	ret
 
+	; printa sch_stacks
 _dbg_dump_stacks:
 	pusha
 

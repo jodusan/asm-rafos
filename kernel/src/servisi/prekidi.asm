@@ -105,6 +105,7 @@ novi_int08:									; Poziva stari int 08h pa zatim rutinu za stampanje
 		; ------------------------------------------------------------------------------------------
 		; SCHEDULER RUTINA
 		; ------------------------------------------------------------------------------------------														
+		; cuvamo kontekst na steku trenutnog procesa
 		push ds 
 		push es 
 		push gs
@@ -127,12 +128,13 @@ novi_int08:									; Poziva stari int 08h pa zatim rutinu za stampanje
 		push sys
 		pop fs
 
+
 		mov si, sch_stacks
 		xor ah, ah
 		mov al, byte [sch_active_proc]
-		add si, ax 							; pamtimo sp trenutnog procesa 
+		add si, ax 							
 		add si, ax 
-		mov word [si], sp
+		mov word [si], sp 					; pamtimo sp trenutnog procesa 
 
 		mov al, byte [sch_queue]			; sch_active_proc je sch_queue[0] 
 		mov byte [sch_active_proc], al 	
@@ -188,9 +190,9 @@ novi_int08:									; Poziva stari int 08h pa zatim rutinu za stampanje
 		jmp .kraj
 
 	.za_ubijanje:
-		pushf
-		push sys
-		push _izbaci_proces
+		pushf 							; gurni flags sys i izbaci_proces 
+		push sys 						; na stek tako da se iret vrati 
+		push _izbaci_proces  			; na izbaci proces
 		; ------------------------------------------------------------------------------------------
 		; SCHEDULER RUTINA KRAJ
 		; ------------------------------------------------------------------------------------------

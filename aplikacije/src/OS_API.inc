@@ -18,7 +18,7 @@ OS 			    equ 2000h
 _sys_exit 		equ 0267h
 
 os_main         equ 0000h                   ; Prostor kernela
-app_main        equ 8400h                   ; OBRISATI
+app_main        equ 8400h                   ; OBRISATI <- Multiprocesiranje ne radi za (stare) aplikacije koje koriste app_main
 _get_app_offset equ 025Eh 					; Vraca offset za lokalne adrese u AX
 
 input           equ 8400h - 100h        	; Deljene oblasti izmedju

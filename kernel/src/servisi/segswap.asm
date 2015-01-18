@@ -6,8 +6,7 @@
 ; Zamena segmenata pri sistemskim pozivima - RAF_OS multitasking
 ; Upotreba: vector.inc
 ; -----------------------------------------------------------------------------
-; Inicijalna verzija 0.0.1 (Marko Bakovic, Sasa Vuckovic,
-; 							Dusan Josipovic, 01.01.2015.).
+; Inicijalna verzija 0.0.1 (Marko Bakovic, Sasa Vuckovic, Dusan Josipovic, 01.01.2015.).
 ; -----------------------------------------------------------------------------
 
 ; ------------------------------------------------------------------

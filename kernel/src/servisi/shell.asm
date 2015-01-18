@@ -267,24 +267,22 @@ PunoIme:
     mov     di, input                   
     call    _string_copy
 
-    mov     si, input
-    call    _string_parse
+    mov     si, input                   ; Proveravamo da li je aplikacija pokrenuta sa background parametrom?
+    call    _string_parse               ; arg1 arg2 arg3 se nalaze u bx cx dx
 
-    ; na ax je ime datoteke
-    ; na bx, cx, dx su argumenti, proveravamo da li je neki bg_string
-    mov     di, bg_string
+    mov     di, bg_string               ; da li je bx argument --bg ?
     mov     si, bx
     clc
     call    _string_compare
     jc      .bg_proces
     
-    mov     di, bg_string
+    mov     di, bg_string               ; da li je cx argument --bg ?
     mov     si, cx
     clc
     call    _string_compare
     jc      .bg_proces
 
-    mov     di, bg_string
+    mov     di, bg_string               ; da li je dx argument --bg ?
     mov     si, dx
     clc
     call    _string_compare
